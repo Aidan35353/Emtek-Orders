@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EMTEK — Internal Portal</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- LOGIN SCREEN -->
+  <div id="loginScreen" class="login-screen">
+    <div class="login-box">
+      <div class="login-logo">EMTEK<span class="logo-arrow">«</span></div>
+      <div class="login-title">INTERNAL PORTAL</div>
+      <div class="login-subtitle">Sign in to your account</div>
+      <form id="loginForm">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="loginEmail" placeholder="you@emtek.ie" required autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="loginPassword" placeholder="••••••••" required autocomplete="current-password" />
+        </div>
+        <div class="login-error hidden" id="loginError">Incorrect email or password</div>
+        <button type="submit" class="btn-primary yellow-btn login-submit">SIGN IN</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- PROFILE SETUP -->
+  <div id="profileSetup" class="login-screen hidden">
+    <div class="login-box">
+      <div class="login-logo">EMTEK<span class="logo-arrow">«</span></div>
+      <div class="login-title">COMPLETE YOUR PROFILE</div>
+      <div class="login-subtitle">Tell us your name and role to get started</div>
+      <form id="profileForm">
+        <div class="form-group">
+          <label>Full Name *</label>
+          <input type="text" id="profileName" placeholder="e.g. Ciara Murphy" required />
+        </div>
+        <div class="form-group">
+          <label>Your Role *</label>
+          <select id="profileRole" required>
+            <option value="">Select your role...</option>
+            <option value="sales">Sales</option>
+            <option value="operations">Operations</option>
+            <option value="accounts">Accounts</option>
+          </select>
+        </div>
+        <button type="submit" class="btn-primary yellow-btn login-submit">SAVE &amp; CONTINUE</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <nav class="navbar">
+    <div class="nav-logo">EMTEK<span class="logo-arrow">«</span></div>
+    <div class="nav-links">
+      <button class="nav-btn active" data-view="dashboard">Dashboard</button>
+      <button class="nav-btn" data-view="new-order">New Order</button>
+      <button class="nav-btn" data-view="pipeline">CM Pipeline</button>
+    </div>
+    <div class="nav-right">
+      <span class="nav-user" id="navUserName"></span>
+      <!-- Notification Bell -->
+      <div class="notif-bell" id="notifBell">
+        <span class="notif-icon">🔔</span>
+        <span class="notif-count hidden" id="notifCount">0</span>
+        <div class="notif-dropdown hidden" id="notifDropdown"></div>
+      </div>
+      <span class="order-count-badge" id="pendingBadge">0 Pending</span>
+      <button id="logoutBtn" class="btn-logout">Sign Out</button>
+    </div>
+  </nav>
+
+  <!-- HERO SPLIT BANNER -->
+  <div class="hero-split">
+    <div class="hero-panel blue" id="heroPanelLeft">
+      <div class="hero-label">SALES</div>
+      <div class="hero-sub">Submit new orders for</div>
+      <div class="hero-headline">Fast Order<br>Processing</div>
+    </div>
+    <div class="hero-panel yellow" id="heroPanelRight">
+      <div class="hero-label">OPERATIONS</div>
+      <div class="hero-sub">Track and manage</div>
+      <div class="hero-headline">Live Dispatch<br>Dashboard</div>
+    </div>
+  </div>
+
+  <!-- ======================== NEW ORDER VIEW ======================== -->
+  <div id="view-new-order" class="view hidden">
+    <div class="section-header blue-bg">
+      <h2>NEW ORDER</h2>
+      <p>Complete all fields and submit for operations dispatch</p>
+    </div>
+    <div class="form-container">
+      <form id="orderForm">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Customer Name *</label>
+            <input type="text" id="customerName" placeholder="e.g. Boyle Construction Ltd" required />
+          </div>
+          <div class="form-group">
+            <label>Contact Number</label>
+            <input type="tel" id="contactNumber" placeholder="e.g. 087 123 4567" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Delivery Address *</label>
+          <input type="text" id="deliveryAddress" placeholder="e.g. Unit 4, Industrial Estate, Dublin" required />
+        </div>
+        <div class="form-divider"><span>ORDER ITEMS</span></div>
+        <div id="orderItems">
+          <div class="order-item-row" data-index="0">
+            <div class="item-fields">
+              <div class="form-group">
+                <label>Category *</label>
+                <select class="item-category" required>
+                  <option value="">Select category...</option>
+                  <optgroup label="Construction Materials">
+                    <option value="IRR 6mm">IRR 6mm</option>
+                    <option value="IRR 10mm">IRR 10mm</option>
+                    <option value="M60F">M60F</option>
+                    <option value="Tough Patch">Tough Patch</option>
+                    <option value="QC10F">QC10F</option>
+                    <option value="M90">M90</option>
+                    <option value="FP Smooth Grey">FP Smooth Grey</option>
+                    <option value="FP Grey">FP Grey</option>
+                    <option value="FP Smooth Limestone">FP Smooth Limestone</option>
+                    <option value="FP Smooth Charcoal">FP Smooth Charcoal</option>
+                    <option value="FP Limestone">FP Limestone</option>
+                    <option value="FP Charcoal">FP Charcoal</option>
+                    <option value="FP Premium">FP Premium</option>
+                    <option value="ProPrime">ProPrime</option>
+                    <option value="Slipbond">Slipbond</option>
+                    <option value="Cempoint">Cempoint</option>
+                    <option value="Instaband Eco">Instaband Eco</option>
+                    <option value="Instaline White">Instaline White</option>
+                    <option value="Instaline Yellow">Instaline Yellow</option>
+                    <option value="SCJ">SCJ</option>
+                  </optgroup>
+                  <optgroup label="Safety Barriers">
+                    <option value="Polymer Barrier">Polymer Barrier</option>
+                    <option value="Steel Barrier">Steel Barrier</option>
+                    <option value="Bollard">Bollard</option>
+                    <option value="Rack Guard">Rack Guard</option>
+                    <option value="Column Protector">Column Protector</option>
+                  </optgroup>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Product / SKU *</label>
+                <input type="text" class="item-product" placeholder="e.g. Sikaflex-291" required />
+              </div>
+              <div class="form-group item-qty">
+                <label>Qty *</label>
+                <input type="number" class="item-quantity" placeholder="1" min="1" required />
+              </div>
+              <div class="form-group item-unit">
+                <label>Unit</label>
+                <select class="item-unit-select">
+                  <option value="Tubs">Tubs</option>
+                  <option value="Bags">Bags</option>
+                  <option value="Unit">Unit</option>
+                </select>
+              </div>
+            </div>
+            <button type="button" class="remove-item-btn hidden" title="Remove item">✕</button>
+          </div>
+        </div>
+        <button type="button" id="addItemBtn" class="btn-add-item">+ Add Another Item</button>
+        <div class="form-divider"><span>DELIVERY DETAILS</span></div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Required Date *</label>
+            <input type="date" id="requiredDate" required />
+          </div>
+          <div class="form-group">
+            <label>Priority</label>
+            <select id="priority">
+              <option value="Normal">Normal</option>
+              <option value="Urgent">Urgent</option>
+              <option value="Scheduled">Scheduled</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Order Notes</label>
+          <textarea id="orderNotes" placeholder="Special instructions, access requirements, etc." rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Sales Rep *</label>
+          <input type="text" id="salesRep" placeholder="Your name" required />
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-primary yellow-btn">SUBMIT ORDER</button>
+          <button type="reset" class="btn-secondary">Clear Form</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================== DASHBOARD VIEW ======================== -->
+  <div id="view-dashboard" class="view hidden">
+    <div class="dashboard-controls">
+      <div class="controls-left">
+        <input type="text" id="searchInput" placeholder="Search orders, customers, products..." />
+        <select id="filterPriority">
+          <option value="">All Priorities</option>
+          <option value="Urgent">Urgent</option>
+          <option value="Normal">Normal</option>
+          <option value="Scheduled">Scheduled</option>
+        </select>
+        <select id="filterCategory">
+          <option value="">All Categories</option>
+          <option value="Construction Materials">Construction Materials</option>
+          <option value="Safety Barriers">Safety Barriers</option>
+        </select>
+      </div>
+      <div class="controls-right">
+        <button id="exportBtn" class="btn-export">Export CSV</button>
+        <button id="clearAllBtn" class="btn-danger-sm">Clear All</button>
+      </div>
+    </div>
+    <div class="stats-bar">
+      <div class="stat-card blue-bg">
+        <div class="stat-number" id="statTotal">0</div>
+        <div class="stat-label">Total Orders</div>
+      </div>
+      <div class="stat-card yellow-bg">
+        <div class="stat-number" id="statPending">0</div>
+        <div class="stat-label">Pending</div>
+      </div>
+      <div class="stat-card dark-bg">
+        <div class="stat-number" id="statReady">0</div>
+        <div class="stat-label">Ready to Dispatch</div>
+      </div>
+      <div class="stat-card green-bg">
+        <div class="stat-number" id="statDispatched">0</div>
+        <div class="stat-label">Dispatched</div>
+      </div>
+    </div>
+    <div class="kanban-board">
+      <div class="kanban-col">
+        <div class="kanban-header blue-bg">
+          <span class="col-icon">📋</span><span>PENDING</span>
+          <span class="col-count" id="countPending">0</span>
+        </div>
+        <div class="kanban-cards" id="col-pending"><div class="empty-col">No pending orders</div></div>
+      </div>
+      <div class="kanban-col">
+        <div class="kanban-header yellow-bg dark-text">
+          <span class="col-icon">📦</span><span>READY TO DISPATCH</span>
+          <span class="col-count" id="countReady">0</span>
+        </div>
+        <div class="kanban-cards" id="col-ready"><div class="empty-col">No orders ready</div></div>
+      </div>
+      <div class="kanban-col">
+        <div class="kanban-header dark-bg">
+          <span class="col-icon">🚚</span><span>DISPATCHED</span>
+          <span class="col-count" id="countDispatched">0</span>
+        </div>
+        <div class="kanban-cards" id="col-dispatched"><div class="empty-col">No dispatched orders</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== PIPELINE VIEW ======================== -->
+  <div id="view-pipeline" class="view hidden">
+    <div class="section-header blue-bg">
+      <h2>CONSTRUCTION MATERIALS PIPELINE</h2>
+      <p>Track every order from sale through to invoice</p>
+    </div>
+
+    <div class="pipeline-board">
+
+      <div class="pipeline-col">
+        <div class="kanban-header blue-bg">
+          <span class="col-icon">💼</span><span>SALE</span>
+          <span class="col-count" id="pipe-count-sale">0</span>
+        </div>
+        <div class="pipeline-cards" id="pipe-sale"><div class="empty-col">No new orders</div></div>
+      </div>
+
+      <div class="pipeline-arrow">▶</div>
+
+      <div class="pipeline-col">
+        <div class="kanban-header yellow-bg dark-text">
+          <span class="col-icon">📦</span><span>ORDER PICKED</span>
+          <span class="col-count" id="pipe-count-order-picked">0</span>
+        </div>
+        <div class="pipeline-cards" id="pipe-order-picked"><div class="empty-col">Nothing to pick</div></div>
+      </div>
+
+      <div class="pipeline-arrow">▶</div>
+
+      <div class="pipeline-col">
+        <div class="kanban-header dark-bg">
+          <span class="col-icon">🚚</span><span>DISPATCHED</span>
+          <span class="col-count" id="pipe-count-dispatched">0</span>
+        </div>
+        <div class="pipeline-cards" id="pipe-dispatched"><div class="empty-col">Nothing dispatched</div></div>
+      </div>
+
+      <div class="pipeline-arrow">▶</div>
+
+      <div class="pipeline-col">
+        <div class="kanban-header green-bg">
+          <span class="col-icon">🧾</span><span>INVOICE</span>
+          <span class="col-count" id="pipe-count-invoice">0</span>
+        </div>
+        <div class="pipeline-cards" id="pipe-invoice"><div class="empty-col">Nothing to invoice</div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ORDER DETAIL MODAL -->
+  <div id="orderModal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header" id="modalHeader">
+        <h3 id="modalTitle">Order Details</h3>
+        <button class="modal-close" id="modalClose">✕</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-footer" id="modalFooter"></div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- Loading overlay -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-box">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Connecting...</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
