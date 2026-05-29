@@ -105,9 +105,9 @@ profileForm.addEventListener('submit', async e => {
   db.auth.updateUser({ data: { full_name, role } }).catch(err => console.warn('Profile sync:', err));
 
   profileSetup.classList.add('hidden');
-  await loadProfile(authUser);
-  await loadAllData();
+  loadProfile(authUser);
   showView('dashboard');
+  loadAllData();
 });
 
 // ===================== NOTIFICATIONS =====================
@@ -212,7 +212,6 @@ async function fetchOrders() {
 }
 
 async function loadAllData() {
-  showLoading('Loading...');
   await Promise.all([fetchOrders(), fetchNotifications()]);
   hideLoading();
   renderDashboard();
@@ -636,9 +635,9 @@ async function initApp(user) {
       profileSetup.classList.remove('hidden');
       return;
     }
-    await loadAllData();
-    subscribeRealtime();
     showView('dashboard');
+    loadAllData();
+    subscribeRealtime();
   } catch (err) {
     hideLoading();
     console.error('Init error:', err);
