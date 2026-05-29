@@ -635,6 +635,7 @@ async function initApp(user) {
       profileSetup.classList.remove('hidden');
       return;
     }
+    hideLoading();
     showView('dashboard');
     loadAllData();
     subscribeRealtime();
