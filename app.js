@@ -20,11 +20,12 @@ const STAGE_NOTIFY = {
 };
 
 // ===================== STATE =====================
-let orders      = [];
-let notifList   = [];
-let currentUser = null;
-let authUser    = null;
-let activeModal = null;
+let orders          = [];
+let notifList       = [];
+let currentUser     = null;
+let authUser        = null;
+let activeModal     = null;
+let realtimeChannel = null;
 
 // ===================== LOADING =====================
 const loadingOverlay = document.getElementById('loadingOverlay');
@@ -43,6 +44,8 @@ function showLoginScreen() {
   loginScreen.classList.remove('hidden');
   loginError.classList.add('hidden');
   loginForm.reset();
+  // Hide all app views when showing login
+  Object.values(views).forEach(v => v.classList.add('hidden'));
 }
 function hideLoginScreen() { loginScreen.classList.add('hidden'); }
 
@@ -65,7 +68,6 @@ loginForm.addEventListener('submit', async e => {
 
 document.getElementById('logoutBtn').addEventListener('click', async () => {
   await db.auth.signOut();
-  currentUser = null;
 });
 
 
@@ -113,6 +115,7 @@ profileForm.addEventListener('submit', async e => {
   loadProfile(authUser);
   showView('dashboard');
   loadAllData();
+  subscribeRealtime();
 });
 
 // ===================== NOTIFICATIONS =====================
@@ -238,12 +241,14 @@ async function loadAllData() {
 
 // ===================== REALTIME =====================
 function subscribeRealtime() {
-  dataDb.channel('app-changes')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async () => {
-      await fetchOrders();
-      renderDashboard();
-      renderPipeline();
-      updatePendingBadge();
+  // Remove any existing subscription to avoid duplicates on re-login
+  if (realtimeChannel) {
+    dataDb.removeChannel(realtimeChannel);
+    realtimeChannel = null;
+  }
+  realtimeChannel = dataDb.channel('app-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+      fetchOrders();
     })
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, payload => {
       if (currentUser && payload.new.target_role === currentUser.role) {
@@ -529,8 +534,11 @@ async function advancePipelineStage(orderId, nextStage) {
   if (!order) return;
   const { error } = await dataDb.from('orders').update({ pipeline_stage: nextStage }).eq('id', orderId);
   if (error) { showToast('Failed to update stage', 'error'); console.error(error); return; }
+  // Update local state and re-render immediately
   order.pipeline_stage = nextStage;
-  await createNotification(order, nextStage);
+  renderPipeline();
+  renderDashboard();
+  createNotification(order, nextStage).catch(console.warn); // non-blocking
   showToast(`${orderId} → ${nextStage}`, 'success');
 }
 
@@ -606,6 +614,12 @@ async function updateStatus(orderId, newStatus) {
   closeModal();
   const { error } = await dataDb.from('orders').update({ status: newStatus }).eq('id', orderId);
   if (error) { showToast('Failed to update status', 'error'); console.error(error); return; }
+  // Update local state immediately — don't wait for real-time
+  const order = orders.find(o => o.id === orderId);
+  if (order) order.status = newStatus;
+  renderDashboard();
+  renderPipeline();
+  updatePendingBadge();
   const msgs = { Ready: 'Ready to Dispatch', Dispatched: 'Dispatched', Pending: 'Back to Pending' };
   showToast(`${orderId} — ${msgs[newStatus]}`, 'success');
 }
@@ -615,6 +629,10 @@ async function deleteOrder(orderId) {
   closeModal();
   const { error } = await dataDb.from('orders').delete().eq('id', orderId);
   if (error) { showToast('Failed to delete order', 'error'); console.error(error); return; }
+  orders = orders.filter(o => o.id !== orderId);
+  renderDashboard();
+  renderPipeline();
+  updatePendingBadge();
   showToast(`Order ${orderId} deleted`, 'warning');
 }
 
@@ -643,6 +661,10 @@ document.getElementById('clearAllBtn').addEventListener('click', async () => {
   const { error } = await dataDb.from('orders').delete().neq('id', '');
   hideLoading();
   if (error) { showToast('Failed to clear orders', 'error'); console.error(error); return; }
+  orders = [];
+  renderDashboard();
+  renderPipeline();
+  updatePendingBadge();
   showToast('All orders cleared', 'warning');
 });
 
@@ -701,8 +723,21 @@ db.auth.onAuthStateChange(async (event, session) => {
     hideLoginScreen();
     await initApp(session.user);
   } else if (event === 'SIGNED_OUT') {
+    // Full reset
+    orders      = [];
+    notifList   = [];
+    currentUser = null;
+    authUser    = null;
     appInitialised = false;
+    if (realtimeChannel) {
+      dataDb.removeChannel(realtimeChannel);
+      realtimeChannel = null;
+    }
     hideLoading();
+    // Clear the nav user name
+    document.getElementById('navUserName').textContent = '';
+    document.getElementById('notifCount').classList.add('hidden');
+    document.getElementById('pendingBadge').textContent = '0 Pending';
     showLoginScreen();
   }
 });
