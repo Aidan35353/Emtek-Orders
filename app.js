@@ -534,14 +534,28 @@ function buildPipelineCard(order, stage) {
   return card;
 }
 
+// Maps CM pipeline stage → dashboard status automatically
+const STAGE_TO_STATUS = {
+  'Sale':         'Pending',
+  'Order Picked': 'Ready',
+  'Dispatched':   'Dispatched',
+  'Invoice':      'Dispatched',
+};
+
 async function advancePipelineStage(orderId, nextStage) {
   const order = orders.find(o => o.id === orderId);
   if (!order) return;
+  const newStatus = STAGE_TO_STATUS[nextStage] || order.status;
   try {
-    await api('PATCH', '/orders?id=eq.' + orderId, { pipeline_stage: nextStage });
+    await api('PATCH', '/orders?id=eq.' + orderId, {
+      pipeline_stage: nextStage,
+      status:         newStatus,
+    });
     order.pipeline_stage = nextStage;
+    order.status         = newStatus;
     renderPipeline();
     renderDashboard();
+    updatePendingBadge();
     createNotification(order, nextStage);
     showToast(orderId + ' → ' + nextStage, 'success');
   } catch (err) {
@@ -615,14 +629,24 @@ function openModal(orderId) {
 
   const footer = document.getElementById('modalFooter');
   footer.innerHTML = '';
-  if (order.status === 'Pending')
-    addModalBtn(footer, '📦 Mark Ready to Dispatch', 'to-ready',    () => updateStatus(orderId, 'Ready'));
-  if (order.status === 'Ready') {
-    addModalBtn(footer, '↩ Back to Pending',        'to-pending',  () => updateStatus(orderId, 'Pending'));
-    addModalBtn(footer, '🚚 Mark as Dispatched',    'to-dispatch', () => updateStatus(orderId, 'Dispatched'));
+  const cm = isCMOrder(order);
+  if (cm) {
+    // CM orders: status is driven automatically by the pipeline — no manual buttons
+    const stageLabel = document.createElement('div');
+    stageLabel.className = 'modal-cm-note';
+    stageLabel.textContent = '📋 Status updates automatically via the CM Pipeline';
+    footer.appendChild(stageLabel);
+  } else {
+    // Safety Barrier orders: manual status buttons
+    if (order.status === 'Pending')
+      addModalBtn(footer, '📦 Mark Ready to Dispatch', 'to-ready',    () => updateStatus(orderId, 'Ready'));
+    if (order.status === 'Ready') {
+      addModalBtn(footer, '↩ Back to Pending',        'to-pending',  () => updateStatus(orderId, 'Pending'));
+      addModalBtn(footer, '🚚 Mark as Dispatched',    'to-dispatch', () => updateStatus(orderId, 'Dispatched'));
+    }
+    if (order.status === 'Dispatched')
+      addModalBtn(footer, '↩ Back to Ready', 'to-ready', () => updateStatus(orderId, 'Ready'));
   }
-  if (order.status === 'Dispatched')
-    addModalBtn(footer, '↩ Back to Ready', 'to-ready', () => updateStatus(orderId, 'Ready'));
   addModalBtn(footer, 'Delete Order', 'btn-delete', () => deleteOrder(orderId));
   document.getElementById('orderModal').classList.remove('hidden');
 }

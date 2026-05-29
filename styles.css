@@ -642,6 +642,15 @@ body { font-family: var(--font); background: var(--gray); color: var(--dark); mi
 .btn-status.to-pending:hover { background: var(--blue-dk); }
 .btn-delete { background: var(--red); color: white; margin-left: auto; }
 .btn-delete:hover { background: #c0392b; }
+.modal-cm-note {
+  font-size: 0.82rem;
+  color: var(--gray-txt);
+  font-weight: 600;
+  background: var(--gray);
+  border-radius: var(--radius);
+  padding: 8px 14px;
+  border-left: 3px solid var(--blue);
+}
 
 /* ===================== TOAST ===================== */
 .toast {
