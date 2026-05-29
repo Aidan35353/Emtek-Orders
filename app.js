@@ -68,21 +68,13 @@ const profileSetup = document.getElementById('profileSetup');
 const profileForm  = document.getElementById('profileForm');
 
 async function loadProfile(user) {
-  console.log('Loading profile for:', user.email);
-  try {
-    const { data, error } = await db.from('profiles').select('*').eq('id', user.id).maybeSingle();
-    console.log('Profile result:', { data, error });
-    if (error) { console.error('Profile load error:', error); return false; }
-    if (data) {
-      currentUser = { id: user.id, email: user.email, full_name: data.full_name, role: data.role };
-      document.getElementById('navUserName').textContent = `${data.full_name} · ${data.role.charAt(0).toUpperCase() + data.role.slice(1)}`;
-      return true;
-    }
-    return false;
-  } catch (err) {
-    console.error('Profile exception:', err);
-    return false;
+  const meta = user.user_metadata;
+  if (meta && meta.full_name && meta.role) {
+    currentUser = { id: user.id, email: user.email, full_name: meta.full_name, role: meta.role };
+    document.getElementById('navUserName').textContent = `${meta.full_name} · ${meta.role.charAt(0).toUpperCase() + meta.role.slice(1)}`;
+    return true;
   }
+  return false;
 }
 
 profileForm.addEventListener('submit', async e => {
@@ -93,14 +85,14 @@ profileForm.addEventListener('submit', async e => {
   btn.textContent = 'Saving...';
   btn.disabled = true;
 
-  const { data: { user } } = await db.auth.getUser();
-  const { error } = await db.from('profiles').upsert({ id: user.id, full_name, role });
+  const { error } = await db.auth.updateUser({ data: { full_name, role } });
 
   btn.textContent = 'SAVE & CONTINUE';
   btn.disabled = false;
 
   if (error) { showToast('Failed to save profile', 'error'); console.error(error); return; }
 
+  const { data: { user } } = await db.auth.getUser();
   profileSetup.classList.add('hidden');
   await loadProfile(user);
   await loadAllData();
@@ -110,14 +102,17 @@ profileForm.addEventListener('submit', async e => {
 // ===================== NOTIFICATIONS =====================
 async function fetchNotifications() {
   if (!currentUser) return;
-  const { data } = await db
-    .from('notifications')
-    .select('*')
-    .eq('target_role', currentUser.role)
-    .order('created_at', { ascending: false })
-    .limit(20);
-  notifList = data || [];
-  renderNotifBell();
+  try {
+    const { data, error } = await db
+      .from('notifications')
+      .select('*')
+      .eq('target_role', currentUser.role)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    if (!error) { notifList = data || []; renderNotifBell(); }
+  } catch (err) {
+    console.warn('Notifications unavailable:', err);
+  }
 }
 
 async function createNotification(order, stage) {
