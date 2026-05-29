@@ -642,6 +642,34 @@ body { font-family: var(--font); background: var(--gray); color: var(--dark); mi
 .btn-status.to-pending:hover { background: var(--blue-dk); }
 .btn-delete { background: var(--red); color: white; margin-left: auto; }
 .btn-delete:hover { background: #c0392b; }
+/* Pipeline completed state */
+.card-completed {
+  border-color: var(--green);
+  background: #f0faf4;
+  opacity: 0.85;
+}
+.invoice-done {
+  color: var(--green);
+  font-weight: 800;
+  font-size: 0.82rem;
+  margin-top: 10px;
+}
+.btn-complete-invoice {
+  background: var(--green);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  padding: 8px 14px;
+  font-family: var(--font);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 10px;
+  transition: background 0.15s;
+}
+.btn-complete-invoice:hover { background: #1a8a4a; }
+
 .modal-cm-note {
   font-size: 0.82rem;
   color: var(--gray-txt);

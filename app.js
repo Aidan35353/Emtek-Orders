@@ -51,13 +51,14 @@ function withTimeout(promise, ms = 12000) {
 }
 
 // ===================== CONSTANTS =====================
-const PIPELINE_STAGES = ['Sale', 'Order Picked', 'Dispatched', 'Invoice'];
+const PIPELINE_STAGES = ['Sale', 'Order Picked', 'Dispatched', 'Invoice', 'Completed'];
 const SAFETY_PRODUCTS = ['Polymer Barrier', 'Steel Barrier', 'Bollard', 'Rack Guard', 'Column Protector'];
 const STAGE_NOTIFY = {
   'Sale':         { role: 'operations', msg: o => `📦 New order ${o.id} from ${o.customer_name} — ready to pick` },
   'Order Picked': { role: 'operations', msg: o => `✅ ${o.id} picked — ready to dispatch` },
   'Dispatched':   { role: 'accounts',   msg: o => `🚚 ${o.id} dispatched to ${o.customer_name} — ready to invoice` },
-  'Invoice':      { role: 'sales',      msg: o => `✔ ${o.id} fully invoiced — order complete` },
+  'Invoice':      { role: 'accounts',   msg: o => `🧾 ${o.id} ready to invoice — action required` },
+  'Completed':    { role: 'sales',      msg: o => `✔ ${o.id} invoice complete — order closed` },
 };
 
 // ===================== STATE =====================
@@ -503,27 +504,45 @@ function isCMOrder(order) {
 
 function renderPipeline() {
   const cmOrders = orders.filter(isCMOrder);
-  PIPELINE_STAGES.forEach(stage => {
-    const id          = stage.toLowerCase().replace(/ /g, '-');
-    const col         = document.getElementById('pipe-' + id);
-    const countEl     = document.getElementById('pipe-count-' + id);
-    const stageOrders = cmOrders.filter(o => (o.pipeline_stage || 'Sale') === stage);
-    if (countEl) countEl.textContent = stageOrders.length;
+  // Display stages — 'Completed' folds into the Invoice column, no separate column needed
+  ['Sale', 'Order Picked', 'Dispatched', 'Invoice'].forEach(stage => {
+    const id      = stage.toLowerCase().replace(/ /g, '-');
+    const col     = document.getElementById('pipe-' + id);
+    const countEl = document.getElementById('pipe-count-' + id);
+    // Invoice column shows both Invoice (pending) and Completed orders
+    const stageOrders = stage === 'Invoice'
+      ? cmOrders.filter(o => ['Invoice', 'Completed'].includes(o.pipeline_stage || 'Sale'))
+      : cmOrders.filter(o => (o.pipeline_stage || 'Sale') === stage);
+    // Count only shows pending invoices (not yet completed)
+    if (countEl) countEl.textContent = stage === 'Invoice'
+      ? cmOrders.filter(o => (o.pipeline_stage || 'Sale') === 'Invoice').length
+      : stageOrders.length;
     if (!col) return;
     col.innerHTML = '';
     if (!stageOrders.length) { col.innerHTML = '<div class="empty-col">No orders</div>'; return; }
-    stageOrders.forEach(order => col.appendChild(buildPipelineCard(order, stage)));
+    stageOrders.forEach(order => col.appendChild(buildPipelineCard(order, order.pipeline_stage || 'Sale')));
   });
 }
 
 function buildPipelineCard(order, stage) {
-  const card      = document.createElement('div');
-  card.className  = 'order-card';
-  const stageIdx  = PIPELINE_STAGES.indexOf(stage);
-  const nextStage = PIPELINE_STAGES[stageIdx + 1];
-  const due       = order.required_date ? new Date(order.required_date + 'T00:00:00') : null;
-  const dateStr   = due ? due.toLocaleDateString('en-IE', { day: 'numeric', month: 'short' }) : '—';
-  const chips     = order.items.slice(0, 2).map(i => `<span>${i.quantity} ${i.unit} ${i.category}</span>`).join('');
+  const card     = document.createElement('div');
+  card.className = 'order-card' + (stage === 'Completed' ? ' card-completed' : '');
+  const due      = order.required_date ? new Date(order.required_date + 'T00:00:00') : null;
+  const dateStr  = due ? due.toLocaleDateString('en-IE', { day: 'numeric', month: 'short' }) : '—';
+  const chips    = order.items.slice(0, 2).map(i => `<span>${i.quantity} ${i.unit} ${i.category}</span>`).join('');
+
+  // Determine the action button / badge
+  let actionHTML;
+  if (stage === 'Completed') {
+    actionHTML = '<div class="stage-complete invoice-done">✔ Invoice Complete</div>';
+  } else if (stage === 'Invoice') {
+    actionHTML = `<button class="btn-advance btn-complete-invoice" data-id="${order.id}">✔ Mark Invoice Complete</button>`;
+  } else {
+    const stageIdx  = PIPELINE_STAGES.indexOf(stage);
+    const nextStage = PIPELINE_STAGES[stageIdx + 1];
+    actionHTML = `<button class="btn-advance" data-id="${order.id}" data-next="${nextStage}">→ Mark as ${nextStage}</button>`;
+  }
+
   card.innerHTML = `
     <div class="card-top">
       <span class="card-order-id">${order.id}</span>
@@ -535,12 +554,16 @@ function buildPipelineCard(order, stage) {
       <span class="card-date">${dateStr}</span>
       <span class="card-rep">${order.sales_rep}</span>
     </div>
-    ${nextStage
-      ? `<button class="btn-advance" data-id="${order.id}" data-next="${nextStage}">→ Mark as ${nextStage}</button>`
-      : '<div class="stage-complete">✔ Complete</div>'}`;
+    ${actionHTML}`;
+
   card.querySelector('.btn-advance')?.addEventListener('click', e => {
     e.stopPropagation();
-    advancePipelineStage(order.id, nextStage);
+    const next = e.currentTarget.dataset.next || 'Completed';
+    advancePipelineStage(order.id, next);
+  });
+  card.querySelector('.btn-complete-invoice')?.addEventListener('click', e => {
+    e.stopPropagation();
+    advancePipelineStage(order.id, 'Completed');
   });
   card.addEventListener('click', () => openModal(order.id));
   return card;
@@ -552,6 +575,7 @@ const STAGE_TO_STATUS = {
   'Order Picked': 'Ready',
   'Dispatched':   'Dispatched',
   'Invoice':      'Dispatched',
+  'Completed':    'Dispatched',
 };
 
 async function advancePipelineStage(orderId, nextStage) {
