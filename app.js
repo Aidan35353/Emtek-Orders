@@ -341,8 +341,19 @@ document.getElementById('orderForm').addEventListener('submit', async e => {
   if (!items.length) { showToast('Add at least one item', 'error'); return; }
 
   showLoading('Submitting order...');
-  const { data: idData, error: idError } = await db.rpc('next_order_id');
-  if (idError) { hideLoading(); showToast('Failed to generate order ID', 'error'); console.error(idError); return; }
+
+  // Get next order ID
+  let idData;
+  try {
+    const result = await withTimeout(db.rpc('next_order_id'), 12000);
+    if (result.error) throw result.error;
+    idData = result.data;
+  } catch (err) {
+    hideLoading();
+    console.error('next_order_id failed:', err);
+    showToast('Failed to generate order ID — run the SQL fix in Supabase', 'error');
+    return;
+  }
 
   const order = {
     id:               idData,
@@ -358,12 +369,20 @@ document.getElementById('orderForm').addEventListener('submit', async e => {
     pipeline_stage:   'Sale',
   };
 
-  const { error } = await db.from('orders').insert([order]);
-  if (error) { hideLoading(); showToast('Failed to submit order', 'error'); console.error(error); return; }
+  // Insert order
+  try {
+    const result = await withTimeout(db.from('orders').insert([order]), 12000);
+    if (result.error) throw result.error;
+  } catch (err) {
+    hideLoading();
+    console.error('order insert failed:', err);
+    showToast('Failed to submit order — check Supabase permissions', 'error');
+    return;
+  }
 
-  // Notify operations of new CM order
+  // Notify operations of new CM order (non-blocking)
   const isCM = items.some(i => !SAFETY_PRODUCTS.includes(i.category));
-  if (isCM) await createNotification(order, 'Sale');
+  if (isCM) createNotification(order, 'Sale').catch(console.warn);
 
   hideLoading();
   showToast(`Order ${order.id} submitted`, 'success');
