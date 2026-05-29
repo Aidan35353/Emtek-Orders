@@ -697,24 +697,7 @@ document.getElementById('exportBtn').addEventListener('click', () => {
   showToast('Exported ' + filtered.length + ' orders', 'success');
 });
 
-document.getElementById('clearAllBtn').addEventListener('click', async () => {
-  if (!orders.length) { showToast('No orders to clear', 'error'); return; }
-  if (!confirm('Delete all ' + orders.length + ' orders? This cannot be undone.')) return;
-  showLoading('Clearing...');
-  try {
-    await api('DELETE', '/orders?id=not.is.null');
-    orders = [];
-    renderDashboard();
-    renderPipeline();
-    updatePendingBadge();
-    showToast('All orders cleared', 'warning');
-  } catch (err) {
-    showToast('Failed to clear orders', 'error');
-    console.error(err);
-  } finally {
-    hideLoading();
-  }
-});
+// Clear All removed — use Export CSV to back up data instead
 
 // ===================== TOAST =====================
 let toastTimer;
