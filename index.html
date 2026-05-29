@@ -61,6 +61,7 @@
       <button class="nav-btn active" data-view="dashboard">Dashboard</button>
       <button class="nav-btn" data-view="new-order">New Order</button>
       <button class="nav-btn" data-view="pipeline">CM Pipeline</button>
+      <button class="nav-btn" data-view="sales">Sales</button>
     </div>
     <div class="nav-right">
       <span class="nav-user" id="navUserName"></span>
@@ -313,6 +314,83 @@
         <div class="pipeline-cards" id="pipe-invoice"><div class="empty-col">Nothing to invoice</div></div>
       </div>
 
+    </div>
+  </div>
+
+  <!-- ======================== SALES VIEW ======================== -->
+  <div id="view-sales" class="view hidden">
+    <div class="section-header blue-bg">
+      <h2>SALES DASHBOARD</h2>
+      <p>CM Pipeline performance — dispatched orders, invoiced, and pallet tracker</p>
+    </div>
+
+    <!-- Date filter -->
+    <div class="sales-date-filter">
+      <button class="sales-filter-btn" data-period="week">This Week</button>
+      <button class="sales-filter-btn active" data-period="month">This Month</button>
+      <button class="sales-filter-btn" data-period="all">All Time</button>
+    </div>
+
+    <!-- Hero stats row -->
+    <div class="sales-hero">
+      <div class="sales-hero-main blue-bg">
+        <div class="sales-hero-label">Orders Dispatched</div>
+        <div class="sales-hero-number" id="sales-stat-dispatched">0</div>
+        <div class="sales-hero-sub">Dispatched · Invoice · Completed</div>
+      </div>
+      <div class="sales-hero-side">
+        <div class="sales-side-card yellow-bg">
+          <div class="sales-side-label">Invoiced</div>
+          <div class="sales-side-number" id="sales-stat-invoiced">0</div>
+          <div class="sales-side-sub">Invoice + Completed stages</div>
+        </div>
+        <div class="sales-side-card dark-bg">
+          <div class="sales-side-label">Total Pallets</div>
+          <div class="sales-side-number" id="sales-total-pallets">0</div>
+          <div class="sales-side-sub">Bags &amp; Tubs combined</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pallet breakdown -->
+    <div class="sales-pallets">
+      <div class="pallet-card">
+        <div class="pallet-icon">🧺</div>
+        <div class="pallet-detail">
+          <div class="pallet-count" id="sales-stat-bag-pallets">0</div>
+          <div class="pallet-label">Bag Pallets</div>
+          <div class="pallet-sub"><span id="sales-total-bags">0</span> Bags ÷ 56 per pallet</div>
+        </div>
+      </div>
+      <div class="pallet-card">
+        <div class="pallet-icon">📦</div>
+        <div class="pallet-detail">
+          <div class="pallet-count" id="sales-stat-tub-pallets">0</div>
+          <div class="pallet-label">Tub Pallets</div>
+          <div class="pallet-sub"><span id="sales-total-tubs">0</span> Tubs ÷ 52 per pallet</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Product breakdown table -->
+    <div class="sales-breakdown">
+      <div class="breakdown-header">
+        <h3>PRODUCT BREAKDOWN</h3>
+        <p>All dispatched orders in selected period</p>
+      </div>
+      <table class="sales-table">
+        <thead>
+          <tr>
+            <th>Product / SKU</th>
+            <th>Category</th>
+            <th>Quantity</th>
+            <th>Pallets</th>
+          </tr>
+        </thead>
+        <tbody id="sales-product-tbody">
+          <tr><td colspan="4" class="sales-table-empty">No data yet</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 

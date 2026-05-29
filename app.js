@@ -227,6 +227,7 @@ const views   = {
   dashboard:   document.getElementById('view-dashboard'),
   'new-order': document.getElementById('view-new-order'),
   pipeline:    document.getElementById('view-pipeline'),
+  sales:       document.getElementById('view-sales'),
 };
 const navBtns = document.querySelectorAll('.nav-btn[data-view]');
 
@@ -236,6 +237,7 @@ function showView(name) {
   navBtns.forEach(b => b.classList.toggle('active', b.dataset.view === name));
   if (name === 'dashboard') renderDashboard();
   if (name === 'pipeline')  renderPipeline();
+  if (name === 'sales')     renderSalesDashboard();
 }
 navBtns.forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.view)));
 document.getElementById('heroPanelLeft').addEventListener('click',  () => showView('new-order'));
@@ -252,6 +254,7 @@ async function fetchOrders() {
   }
   renderDashboard();
   renderPipeline();
+  renderSalesDashboard();
   updatePendingBadge();
 }
 
@@ -599,6 +602,111 @@ async function advancePipelineStage(orderId, nextStage) {
     console.error(err);
   }
 }
+
+// ===================== SALES DASHBOARD =====================
+let salesDateFilter = 'month'; // 'week' | 'month' | 'all'
+
+function getSalesFilteredOrders() {
+  const cmOrders = orders.filter(isCMOrder);
+  if (salesDateFilter === 'all') return cmOrders;
+  const now   = new Date();
+  if (salesDateFilter === 'week') {
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    const day = now.getDay();
+    start.setDate(now.getDate() - (day === 0 ? 6 : day - 1)); // back to Monday
+    return cmOrders.filter(o => new Date(o.created_at) >= start);
+  }
+  if (salesDateFilter === 'month') {
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    return cmOrders.filter(o => new Date(o.created_at) >= start);
+  }
+  return cmOrders;
+}
+
+function fmt(n) { return n % 1 === 0 ? n.toString() : n.toFixed(1); }
+
+function renderSalesDashboard() {
+  const filtered = getSalesFilteredOrders();
+
+  // Dispatched = Dispatched + Invoice + Completed stages
+  const dispatched = filtered.filter(o =>
+    ['Dispatched', 'Invoice', 'Completed'].includes(o.pipeline_stage || 'Sale')
+  );
+  // Invoiced = Invoice + Completed stages
+  const invoiced = filtered.filter(o =>
+    ['Invoice', 'Completed'].includes(o.pipeline_stage || 'Sale')
+  );
+
+  // Tally bags and tubs across all dispatched order items
+  let totalBags = 0;
+  let totalTubs = 0;
+  const productMap = {}; // key = product name → { category, bags, tubs, units }
+
+  dispatched.forEach(order => {
+    order.items.forEach(item => {
+      const qty = Number(item.quantity) || 0;
+      const key = (item.product || item.category).trim();
+      if (!productMap[key]) productMap[key] = { category: item.category, bags: 0, tubs: 0, units: 0 };
+      if      (item.unit === 'Bags')  { totalBags += qty; productMap[key].bags  += qty; }
+      else if (item.unit === 'Tubs')  { totalTubs += qty; productMap[key].tubs  += qty; }
+      else                            {                    productMap[key].units += qty; }
+    });
+  });
+
+  const bagPallets   = totalBags / 56;
+  const tubPallets   = totalTubs / 52;
+  const totalPallets = bagPallets + tubPallets;
+
+  // Update headline stats
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  set('sales-stat-dispatched',  dispatched.length);
+  set('sales-stat-invoiced',    invoiced.length);
+  set('sales-total-pallets',    fmt(totalPallets));
+  set('sales-stat-bag-pallets', fmt(bagPallets));
+  set('sales-total-bags',       totalBags);
+  set('sales-stat-tub-pallets', fmt(tubPallets));
+  set('sales-total-tubs',       totalTubs);
+
+  // Product breakdown table
+  const tbody = document.getElementById('sales-product-tbody');
+  if (!tbody) return;
+  const rows = Object.entries(productMap)
+    .map(([name, d]) => ({
+      name, category: d.category, bags: d.bags, tubs: d.tubs, units: d.units,
+      pallets: d.bags / 56 + d.tubs / 52,
+    }))
+    .sort((a, b) => (b.bags + b.tubs + b.units) - (a.bags + a.tubs + a.units));
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="sales-table-empty">No dispatched orders in this period</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(p => {
+    const qtyParts = [];
+    if (p.bags)  qtyParts.push(`<strong>${p.bags}</strong> Bags`);
+    if (p.tubs)  qtyParts.push(`<strong>${p.tubs}</strong> Tubs`);
+    if (p.units) qtyParts.push(`<strong>${p.units}</strong> Units`);
+    const palletsStr = p.pallets > 0 ? fmt(p.pallets) : '—';
+    return `<tr>
+      <td><strong>${p.name}</strong></td>
+      <td><span class="cat-chip">${p.category}</span></td>
+      <td>${qtyParts.join(', ') || '—'}</td>
+      <td class="pallet-cell">${palletsStr}</td>
+    </tr>`;
+  }).join('');
+}
+
+// Sales date filter buttons
+document.querySelectorAll('.sales-filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    salesDateFilter = btn.dataset.period;
+    document.querySelectorAll('.sales-filter-btn').forEach(b =>
+      b.classList.toggle('active', b === btn)
+    );
+    renderSalesDashboard();
+  });
+});
 
 // ===================== MODAL =====================
 function openModal(orderId) {
