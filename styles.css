@@ -982,6 +982,36 @@ body { font-family: var(--font); background: var(--gray); color: var(--dark); mi
   flex-wrap: wrap;
 }
 
+/* Month navigation arrows */
+.chart-title-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.chart-nav-btn {
+  background: var(--white);
+  border: 2px solid var(--gray-mid);
+  border-radius: var(--radius);
+  width: 34px;
+  height: 34px;
+  cursor: pointer;
+  font-size: 0.72rem;
+  color: var(--gray-txt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.chart-nav-btn:hover:not(:disabled) {
+  border-color: var(--blue);
+  color: var(--blue);
+  background: rgba(0,131,201,0.06);
+}
+.chart-nav-btn:disabled { opacity: 0.28; cursor: not-allowed; }
+
 .chart-title {
   font-size: 1.15rem;
   font-weight: 900;

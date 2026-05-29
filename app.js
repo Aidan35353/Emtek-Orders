@@ -628,6 +628,20 @@ document.getElementById('palletTargetInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('setTargetBtn').click();
 });
 
+// ── Month navigation (always the 1st of the viewed month) ──
+let chartMonthDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+document.getElementById('chartPrevBtn').addEventListener('click', () => {
+  chartMonthDate = new Date(chartMonthDate.getFullYear(), chartMonthDate.getMonth() - 1, 1);
+  renderPalletChart();
+});
+document.getElementById('chartNextBtn').addEventListener('click', () => {
+  const n = new Date();
+  if (chartMonthDate.getFullYear() === n.getFullYear() && chartMonthDate.getMonth() === n.getMonth()) return;
+  chartMonthDate = new Date(chartMonthDate.getFullYear(), chartMonthDate.getMonth() + 1, 1);
+  renderPalletChart();
+});
+
 function calcOrderPallets(order) {
   let bags = 0, tubs = 0;
   (order.items || []).forEach(item => {
@@ -660,13 +674,22 @@ function localDateStr(dateInput) {
 }
 
 function renderPalletChart() {
-  const now    = new Date();
-  const year   = now.getFullYear();
-  const month  = now.getMonth();
-  const todayStr = localDateStr(now);
+  const now          = new Date();
+  const year         = chartMonthDate.getFullYear();
+  const month        = chartMonthDate.getMonth();
+  const isCurrentMon = year === now.getFullYear() && month === now.getMonth();
+
+  // Past months show the full month; current month stops at today
+  const viewEndStr = isCurrentMon
+    ? localDateStr(now)
+    : localDateStr(new Date(year, month + 1, 0));
+
+  // Enable / disable the next arrow
+  const nextBtn = document.getElementById('chartNextBtn');
+  if (nextBtn) nextBtn.disabled = isCurrentMon;
 
   // Month name for title
-  const monthName = now.toLocaleDateString('en-IE', { month: 'long', year: 'numeric' });
+  const monthName = chartMonthDate.toLocaleDateString('en-IE', { month: 'long', year: 'numeric' });
   const titleEl   = document.getElementById('chartTitle');
   if (titleEl) titleEl.textContent = monthName + ' Pallets — Progress vs Target';
 
@@ -674,12 +697,14 @@ function renderPalletChart() {
   const pctSub = document.getElementById('kpi-pct-sub');
   if (pctSub) pctSub.textContent = 'target: ' + palletTarget;
 
-  // Dispatched CM orders submitted this month
+  // Dispatched CM orders for this calendar month
   const monthStart = new Date(year, month, 1);
+  const monthEnd   = new Date(year, month + 1, 0, 23, 59, 59);
   const dispatched = orders.filter(o =>
     isCMOrder(o) &&
     ['Dispatched', 'Invoice', 'Completed'].includes(o.pipeline_stage || 'Sale') &&
-    new Date(o.created_at) >= monthStart
+    new Date(o.created_at) >= monthStart &&
+    new Date(o.created_at) <= monthEnd
   );
 
   // Aggregate pallets by local date
@@ -691,15 +716,15 @@ function renderPalletChart() {
 
   // Working day scaffolding
   const allWorkingDays  = getWorkingDaysInMonth(year, month);
-  const doneWorkingDays = allWorkingDays.filter(d => d <= todayStr);
+  const doneWorkingDays = allWorkingDays.filter(d => d <= viewEndStr);
   const totalWD         = allWorkingDays.length;
   const doneWD          = doneWorkingDays.length;
-  const remainingWD     = totalWD - doneWD;
+  const remainingWD     = isCurrentMon ? totalWD - doneWD : 0;
 
-  // Cumulative actual (null for future days so the line stops at today)
+  // Cumulative actual (null for future days so the line stops cleanly)
   let cumulative = 0;
   const actualData = allWorkingDays.map(day => {
-    if (day <= todayStr) {
+    if (day <= viewEndStr) {
       cumulative += dailyPallets[day] || 0;
       return parseFloat(cumulative.toFixed(2));
     }
@@ -720,34 +745,65 @@ function renderPalletChart() {
 
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
   set('kpi-mtd',     fmt(mtd));
-  set('kpi-mtd-sub', 'pallets · ' + doneWD + ' days');
+  set('kpi-mtd-sub', isCurrentMon ? 'pallets · ' + doneWD + ' days' : 'pallets · full month');
   set('kpi-pct',     fmt(pct) + '%');
   set('kpi-pace',    fmt(pace));
 
   const pctEl = document.getElementById('kpi-pct');
   if (pctEl) pctEl.style.color = pct >= 100 ? 'var(--green)' : pct >= 75 ? '#E0A800' : 'var(--red)';
 
+  // 3rd KPI: Required/Day for live month, Surplus/Shortfall for completed months
+  const reqLabelEl = document.getElementById('kpi-req')
+    ?.closest('.kpi-card')?.querySelector('.kpi-label');
   const reqEl = document.getElementById('kpi-req');
-  if (surplus >= 0) {
-    set('kpi-req',     '0');
-    set('kpi-req-sub', 'target met · +' + fmt(surplus) + ' surplus');
-    if (reqEl) reqEl.style.color = 'var(--green)';
+
+  if (!isCurrentMon) {
+    // Completed month — show final result vs target
+    if (reqLabelEl) reqLabelEl.textContent = surplus >= 0 ? 'Surplus' : 'Shortfall';
+    if (surplus >= 0) {
+      set('kpi-req',     '+' + fmt(surplus));
+      set('kpi-req-sub', 'above target');
+      if (reqEl) reqEl.style.color = 'var(--green)';
+    } else {
+      set('kpi-req',     fmt(Math.abs(surplus)));
+      set('kpi-req-sub', 'below target');
+      if (reqEl) reqEl.style.color = 'var(--red)';
+    }
   } else {
-    set('kpi-req',     fmt(reqPerDay));
-    set('kpi-req-sub', remainingWD + ' days remaining');
-    if (reqEl) reqEl.style.color = reqPerDay > pace * 1.35 ? 'var(--red)' : 'var(--dark)';
+    // Current month — show what pace is needed
+    if (reqLabelEl) reqLabelEl.textContent = 'Required / Day';
+    if (surplus >= 0) {
+      set('kpi-req',     '0');
+      set('kpi-req-sub', 'target met · +' + fmt(surplus) + ' surplus');
+      if (reqEl) reqEl.style.color = 'var(--green)';
+    } else {
+      set('kpi-req',     fmt(reqPerDay));
+      set('kpi-req-sub', remainingWD + ' days remaining');
+      if (reqEl) reqEl.style.color = reqPerDay > pace * 1.35 ? 'var(--red)' : 'var(--dark)';
+    }
   }
 
   // Footer note
-  const projected = doneWD > 0 ? pace * totalWD : 0;
-  const projPct   = palletTarget > 0 ? (projected / palletTarget * 100).toFixed(0) : 0;
-  const footerEl  = document.getElementById('chartFooter');
+  const footerEl = document.getElementById('chartFooter');
   if (footerEl) {
-    footerEl.textContent =
-      'Working days: ' + totalWD + ' in ' + monthName +
-      ' · ' + doneWD + ' done, ' + remainingWD + ' remaining' +
-      ' · At current pace ' + fmt(pace) + '/day → projected ' +
-      fmt(projected) + ' pallets (' + projPct + '% of target)';
+    if (isCurrentMon) {
+      const projected = doneWD > 0 ? pace * totalWD : 0;
+      const projPct   = palletTarget > 0 ? (projected / palletTarget * 100).toFixed(0) : 0;
+      footerEl.textContent =
+        'Working days: ' + totalWD + ' in ' + monthName +
+        ' · ' + doneWD + ' done, ' + remainingWD + ' remaining' +
+        ' · At current pace ' + fmt(pace) + '/day → projected ' +
+        fmt(projected) + ' pallets (' + projPct + '% of target)';
+    } else {
+      footerEl.textContent =
+        monthName + ' final: ' + fmt(mtd) + ' pallets dispatched' +
+        ' · Target was ' + palletTarget +
+        ' · ' + (surplus >= 0
+          ? '+' + fmt(surplus) + ' above target'
+          : fmt(Math.abs(surplus)) + ' below target') +
+        ' (' + fmt(pct) + '%)' +
+        ' · ' + totalWD + ' working days';
+    }
   }
 
   // ── Chart.js ──
@@ -786,7 +842,7 @@ function renderPalletChart() {
           order:        2,
         },
         {
-          label: 'Actual cumulative',
+          label: isCurrentMon ? 'Actual cumulative' : 'Final cumulative',
           data: actualData,
           borderColor:      '#0083C9',
           borderWidth:      2.5,

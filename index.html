@@ -328,9 +328,13 @@
     <div class="sales-chart-section">
 
       <div class="chart-section-top">
-        <div>
-          <h3 class="chart-title" id="chartTitle">Loading…</h3>
-          <p class="chart-subtitle">Cumulative pallets dispatched vs monthly target</p>
+        <div class="chart-title-row">
+          <button class="chart-nav-btn" id="chartPrevBtn" title="Previous month">◀</button>
+          <div>
+            <h3 class="chart-title" id="chartTitle">Loading…</h3>
+            <p class="chart-subtitle">Cumulative pallets dispatched vs monthly target</p>
+          </div>
+          <button class="chart-nav-btn" id="chartNextBtn" title="Next month" disabled>▶</button>
         </div>
         <div class="target-row">
           <label class="target-label" for="palletTargetInput">Monthly Target</label>
