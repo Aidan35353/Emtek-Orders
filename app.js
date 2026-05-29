@@ -424,10 +424,22 @@ function getFilteredOrders() {
   });
 }
 
+// For CM orders the dashboard status is always derived from pipeline_stage
+// so it stays in sync even if the stored status field is stale
+function effectiveStatus(order) {
+  if (isCMOrder(order)) {
+    return STAGE_TO_STATUS[order.pipeline_stage || 'Sale'] || order.status;
+  }
+  return order.status;
+}
+
 function renderDashboard() {
   const filtered = getFilteredOrders();
   const byStatus = { Pending: [], Ready: [], Dispatched: [] };
-  filtered.forEach(o => { if (byStatus[o.status]) byStatus[o.status].push(o); });
+  filtered.forEach(o => {
+    const s = effectiveStatus(o);
+    if (byStatus[s]) byStatus[s].push(o);
+  });
 
   document.getElementById('statTotal').textContent      = filtered.length;
   document.getElementById('statPending').textContent    = byStatus.Pending.length;
@@ -451,7 +463,7 @@ function renderDashboard() {
 
 function updatePendingBadge() {
   document.getElementById('pendingBadge').textContent =
-    orders.filter(o => o.status === 'Pending').length + ' Pending';
+    orders.filter(o => effectiveStatus(o) === 'Pending').length + ' Pending';
 }
 
 function buildCard(order) {
