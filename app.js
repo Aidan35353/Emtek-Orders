@@ -2,10 +2,7 @@
 
 // ===================== SUPABASE =====================
 const { createClient } = supabase;
-const db   = createClient(SUPABASE_URL, SUPABASE_ANON); // auth only
-const rtDb = createClient(SUPABASE_URL, SUPABASE_ANON, { // realtime only
-  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
-});
+const db = createClient(SUPABASE_URL, SUPABASE_ANON); // single client: auth + realtime
 
 // ===================== DIRECT REST API =====================
 // Bypasses the Supabase JS client entirely — raw fetch with anon key, identical to curl
@@ -251,8 +248,8 @@ async function loadAllData() {
 
 // ===================== REALTIME =====================
 function subscribeRealtime() {
-  if (realtimeChannel) { rtDb.removeChannel(realtimeChannel); realtimeChannel = null; }
-  realtimeChannel = rtDb.channel('app-changes')
+  if (realtimeChannel) { db.removeChannel(realtimeChannel); realtimeChannel = null; }
+  realtimeChannel = db.channel('app-changes')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => { fetchOrders(); })
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, payload => {
       if (currentUser && payload.new.target_role === currentUser.role) {
@@ -745,11 +742,22 @@ async function initApp(user) {
 
 // Check session on page load
 (async () => {
-  const { data: { session } } = await db.auth.getSession();
-  if (session) {
-    hideLoginScreen();
-    await initApp(session.user);
-  } else {
+  showLoading('Connecting...');
+  // Safety net: if anything hangs, show login after 8 seconds
+  const safety = setTimeout(() => { hideLoading(); showLoginScreen(); }, 8000);
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    clearTimeout(safety);
+    if (session) {
+      hideLoginScreen();
+      await initApp(session.user);
+    } else {
+      hideLoading();
+      showLoginScreen();
+    }
+  } catch (err) {
+    clearTimeout(safety);
+    console.error('Session check failed:', err);
     hideLoading();
     showLoginScreen();
   }
@@ -762,7 +770,7 @@ db.auth.onAuthStateChange(async (event, session) => {
     await initApp(session.user);
   } else if (event === 'SIGNED_OUT') {
     orders = []; notifList = []; currentUser = null; authUser = null; appInitialised = false;
-    if (realtimeChannel) { rtDb.removeChannel(realtimeChannel); realtimeChannel = null; }
+    if (realtimeChannel) { db.removeChannel(realtimeChannel); realtimeChannel = null; }
     document.getElementById('navUserName').textContent  = '';
     document.getElementById('notifCount').classList.add('hidden');
     document.getElementById('pendingBadge').textContent = '0 Pending';
