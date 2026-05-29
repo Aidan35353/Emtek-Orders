@@ -419,7 +419,7 @@ body { font-family: var(--font); background: var(--gray); color: var(--dark); mi
 
 .empty-col {
   text-align: center;
-  color: var(--gray-mid);
+  color: var(--gray-txt);
   font-size: 0.85rem;
   font-weight: 600;
   padding: 32px 0;

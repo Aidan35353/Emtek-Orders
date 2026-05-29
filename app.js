@@ -114,15 +114,12 @@ profileForm.addEventListener('submit', async e => {
 async function fetchNotifications() {
   if (!currentUser) return;
   try {
-    const { data, error } = await db
-      .from('notifications')
-      .select('*')
-      .eq('target_role', currentUser.role)
-      .order('created_at', { ascending: false })
-      .limit(20);
+    const { data, error } = await withTimeout(
+      db.from('notifications').select('*').eq('target_role', currentUser.role).order('created_at', { ascending: false }).limit(20)
+    );
     if (!error) { notifList = data || []; renderNotifBell(); }
   } catch (err) {
-    console.warn('Notifications unavailable:', err);
+    console.warn('Notifications unavailable:', err.message);
   }
 }
 
@@ -205,17 +202,33 @@ document.getElementById('heroPanelLeft').addEventListener('click',  () => showVi
 document.getElementById('heroPanelRight').addEventListener('click', () => showView('dashboard'));
 
 // ===================== FETCH DATA =====================
+function withTimeout(promise, ms = 10000) {
+  let t;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => { t = setTimeout(() => reject(new Error('timeout')), ms); })
+  ]).finally(() => clearTimeout(t));
+}
+
 async function fetchOrders() {
-  const { data, error } = await db.from('orders').select('*').order('created_at', { ascending: false });
-  if (error) { showToast('Failed to load orders', 'error'); console.error(error); return; }
-  orders = data || [];
+  try {
+    const { data, error } = await withTimeout(
+      db.from('orders').select('*').order('created_at', { ascending: false })
+    );
+    if (error) throw error;
+    orders = data || [];
+  } catch (err) {
+    console.error('fetchOrders failed:', err.message);
+    if (err.message === 'timeout') showToast('Database slow — showing cached data', 'error');
+    orders = orders.length ? orders : [];
+  }
+  renderDashboard();
+  updatePendingBadge();
 }
 
 async function loadAllData() {
-  await Promise.all([fetchOrders(), fetchNotifications()]);
-  hideLoading();
-  renderDashboard();
-  updatePendingBadge();
+  fetchOrders();
+  fetchNotifications();
 }
 
 // ===================== REALTIME =====================
