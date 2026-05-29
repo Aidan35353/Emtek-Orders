@@ -83,41 +83,47 @@ body { font-family: var(--font); background: var(--gray); color: var(--dark); mi
 .hero-split {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  min-height: 200px;
 }
 
 .hero-panel {
-  padding: 32px 40px 36px;
+  padding: 14px 32px 16px;
   position: relative;
   cursor: pointer;
   transition: filter 0.18s;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 .hero-panel:hover { filter: brightness(1.05); }
 .hero-panel.blue  { background: var(--blue); }
 .hero-panel.yellow { background: var(--yellow); }
 
 .hero-label {
-  font-size: 0.72rem;
+  font-size: 0.65rem;
   font-weight: 800;
   letter-spacing: 2px;
   text-transform: uppercase;
-  margin-bottom: 10px;
-  opacity: 0.85;
+  margin-bottom: 2px;
+  opacity: 0.8;
 }
-.blue .hero-label  { color: var(--white); border-bottom: 2px solid rgba(255,255,255,0.4); padding-bottom: 8px; display: inline-block; }
-.yellow .hero-label { color: var(--dark); border-bottom: 2px solid rgba(0,0,0,0.25); padding-bottom: 8px; display: inline-block; }
+.blue .hero-label  { color: var(--white); }
+.yellow .hero-label { color: var(--dark); }
 
-.hero-sub { font-size: 0.95rem; margin-top: 12px; opacity: 0.85; }
+.hero-sub {
+  font-size: 0.78rem;
+  margin-top: 0;
+  opacity: 0.75;
+}
 .blue .hero-sub  { color: var(--white); }
 .yellow .hero-sub { color: var(--dark); }
 
 .hero-headline {
-  font-size: clamp(1.8rem, 3vw, 2.8rem);
+  font-size: clamp(1.05rem, 1.8vw, 1.35rem);
   font-weight: 900;
-  line-height: 1.1;
-  margin-top: 6px;
-  letter-spacing: -0.5px;
+  line-height: 1.15;
+  margin-top: 4px;
+  letter-spacing: -0.2px;
 }
 .blue .hero-headline  { color: var(--white); }
 .yellow .hero-headline { color: var(--dark); }

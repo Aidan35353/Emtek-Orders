@@ -52,6 +52,25 @@ function withTimeout(promise, ms = 12000) {
 
 // ===================== CONSTANTS =====================
 const PIPELINE_STAGES = ['Sale', 'Order Picked', 'Dispatched', 'Invoice', 'Completed'];
+
+const HERO_CONTENT = {
+  'dashboard': {
+    left:  { label: 'DASHBOARD',    sub: 'All active orders',              headline: 'Live Overview'    },
+    right: { label: 'DISPATCH',     sub: 'Track and manage',               headline: 'Operations View'  },
+  },
+  'new-order': {
+    left:  { label: 'NEW ORDER',    sub: 'Complete all fields below',       headline: 'Order Entry'      },
+    right: { label: 'SALES',        sub: 'Submit for operations dispatch',  headline: 'Fast Processing'  },
+  },
+  'pipeline': {
+    left:  { label: 'CM PIPELINE',  sub: 'Construction materials only',     headline: 'Stage Tracker'    },
+    right: { label: 'WORKFLOW',     sub: 'Sale through to invoice',         headline: 'Track & Advance'  },
+  },
+  'sales': {
+    left:  { label: 'SALES',        sub: 'Monthly performance',             headline: 'Sales Dashboard'  },
+    right: { label: 'ANALYTICS',    sub: 'Progress vs target',              headline: 'Pallet Tracker'   },
+  },
+};
 const SAFETY_PRODUCTS = ['Polymer Barrier', 'Steel Barrier', 'Bollard', 'Rack Guard', 'Column Protector'];
 const STAGE_NOTIFY = {
   'Sale':         { role: 'operations', msg: o => `New order ${o.id} from ${o.customer_name} — ready to pick` },
@@ -231,10 +250,21 @@ const views   = {
 };
 const navBtns = document.querySelectorAll('.nav-btn[data-view]');
 
+function updateHero(name) {
+  const c = HERO_CONTENT[name] || HERO_CONTENT['dashboard'];
+  document.getElementById('heroLeftLabel').textContent    = c.left.label;
+  document.getElementById('heroLeftSub').textContent      = c.left.sub;
+  document.getElementById('heroLeftHeadline').textContent = c.left.headline;
+  document.getElementById('heroRightLabel').textContent   = c.right.label;
+  document.getElementById('heroRightSub').textContent     = c.right.sub;
+  document.getElementById('heroRightHeadline').textContent = c.right.headline;
+}
+
 function showView(name) {
   Object.values(views).forEach(v => v.classList.add('hidden'));
   if (views[name]) views[name].classList.remove('hidden');
   navBtns.forEach(b => b.classList.toggle('active', b.dataset.view === name));
+  updateHero(name);
   if (name === 'dashboard') renderDashboard();
   if (name === 'pipeline')  renderPipeline();
   if (name === 'sales')     renderSalesDashboard();
