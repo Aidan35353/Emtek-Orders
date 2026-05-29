@@ -2,7 +2,12 @@
 
 // ===================== SUPABASE =====================
 const { createClient } = supabase;
+// Auth client — handles login / logout only
 const db = createClient(SUPABASE_URL, SUPABASE_ANON);
+// Data client — always queries as anon (bypasses JWT auth issues with PostgREST)
+const dataDb = createClient(SUPABASE_URL, SUPABASE_ANON, {
+  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+});
 
 // ===================== CONSTANTS =====================
 const PIPELINE_STAGES   = ['Sale', 'Order Picked', 'Dispatched', 'Invoice'];
@@ -115,7 +120,7 @@ async function fetchNotifications() {
   if (!currentUser) return;
   try {
     const { data, error } = await withTimeout(
-      db.from('notifications').select('*').eq('target_role', currentUser.role).order('created_at', { ascending: false }).limit(20)
+      dataDb.from('notifications').select('*').eq('target_role', currentUser.role).order('created_at', { ascending: false }).limit(20)
     );
     if (!error) { notifList = data || []; renderNotifBell(); }
   } catch (err) {
@@ -126,7 +131,7 @@ async function fetchNotifications() {
 async function createNotification(order, stage) {
   const rule = STAGE_NOTIFY[stage];
   if (!rule) return;
-  await db.from('notifications').insert([{
+  await dataDb.from('notifications').insert([{
     target_role: rule.role,
     message:     rule.msg(order),
     order_id:    order.id,
@@ -163,7 +168,7 @@ function renderNotifDropdown() {
       const orderId = item.dataset.order;
       const notif   = notifList.find(n => n.id === notifId);
       if (notif && !notif.read_by.includes(currentUser.id)) {
-        await db.from('notifications').update({ read_by: [...notif.read_by, currentUser.id] }).eq('id', notifId);
+        await dataDb.from('notifications').update({ read_by: [...notif.read_by, currentUser.id] }).eq('id', notifId);
         notif.read_by.push(currentUser.id);
         renderNotifBell();
       }
@@ -213,7 +218,7 @@ function withTimeout(promise, ms = 10000) {
 async function fetchOrders() {
   try {
     const { data, error } = await withTimeout(
-      db.from('orders').select('*').order('created_at', { ascending: false })
+      dataDb.from('orders').select('*').order('created_at', { ascending: false })
     );
     if (error) throw error;
     orders = data || [];
@@ -233,7 +238,7 @@ async function loadAllData() {
 
 // ===================== REALTIME =====================
 function subscribeRealtime() {
-  db.channel('app-changes')
+  dataDb.channel('app-changes')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async () => {
       await fetchOrders();
       renderDashboard();
@@ -345,7 +350,7 @@ document.getElementById('orderForm').addEventListener('submit', async e => {
   // Get next order ID
   let idData;
   try {
-    const result = await withTimeout(db.rpc('next_order_id'), 12000);
+    const result = await withTimeout(dataDb.rpc('next_order_id'), 12000);
     if (result.error) throw result.error;
     idData = result.data;
   } catch (err) {
@@ -371,7 +376,7 @@ document.getElementById('orderForm').addEventListener('submit', async e => {
 
   // Insert order
   try {
-    const result = await withTimeout(db.from('orders').insert([order]), 12000);
+    const result = await withTimeout(dataDb.from('orders').insert([order]), 12000);
     if (result.error) throw result.error;
   } catch (err) {
     hideLoading();
@@ -522,7 +527,7 @@ function buildPipelineCard(order, stage) {
 async function advancePipelineStage(orderId, nextStage) {
   const order = orders.find(o => o.id === orderId);
   if (!order) return;
-  const { error } = await db.from('orders').update({ pipeline_stage: nextStage }).eq('id', orderId);
+  const { error } = await dataDb.from('orders').update({ pipeline_stage: nextStage }).eq('id', orderId);
   if (error) { showToast('Failed to update stage', 'error'); console.error(error); return; }
   order.pipeline_stage = nextStage;
   await createNotification(order, nextStage);
@@ -599,7 +604,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 // ===================== ORDER ACTIONS =====================
 async function updateStatus(orderId, newStatus) {
   closeModal();
-  const { error } = await db.from('orders').update({ status: newStatus }).eq('id', orderId);
+  const { error } = await dataDb.from('orders').update({ status: newStatus }).eq('id', orderId);
   if (error) { showToast('Failed to update status', 'error'); console.error(error); return; }
   const msgs = { Ready: 'Ready to Dispatch', Dispatched: 'Dispatched', Pending: 'Back to Pending' };
   showToast(`${orderId} — ${msgs[newStatus]}`, 'success');
@@ -608,7 +613,7 @@ async function updateStatus(orderId, newStatus) {
 async function deleteOrder(orderId) {
   if (!confirm(`Delete order ${orderId}? This cannot be undone.`)) return;
   closeModal();
-  const { error } = await db.from('orders').delete().eq('id', orderId);
+  const { error } = await dataDb.from('orders').delete().eq('id', orderId);
   if (error) { showToast('Failed to delete order', 'error'); console.error(error); return; }
   showToast(`Order ${orderId} deleted`, 'warning');
 }
@@ -635,7 +640,7 @@ document.getElementById('clearAllBtn').addEventListener('click', async () => {
   if (!orders.length) { showToast('No orders to clear', 'error'); return; }
   if (!confirm(`Delete all ${orders.length} orders? This cannot be undone.`)) return;
   showLoading('Clearing...');
-  const { error } = await db.from('orders').delete().neq('id', '');
+  const { error } = await dataDb.from('orders').delete().neq('id', '');
   hideLoading();
   if (error) { showToast('Failed to clear orders', 'error'); console.error(error); return; }
   showToast('All orders cleared', 'warning');
