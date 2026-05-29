@@ -67,7 +67,7 @@
       <span class="nav-user" id="navUserName"></span>
       <!-- Notification Bell -->
       <div class="notif-bell" id="notifBell">
-        <span class="notif-icon">🔔</span>
+        <svg class="notif-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
         <span class="notif-count hidden" id="notifCount">0</span>
         <div class="notif-dropdown hidden" id="notifDropdown"></div>
       </div>
@@ -245,21 +245,21 @@
     <div class="kanban-board">
       <div class="kanban-col">
         <div class="kanban-header blue-bg">
-          <span class="col-icon">📋</span><span>PENDING</span>
+          <span>PENDING</span>
           <span class="col-count" id="countPending">0</span>
         </div>
         <div class="kanban-cards" id="col-pending"><div class="empty-col">No pending orders</div></div>
       </div>
       <div class="kanban-col">
         <div class="kanban-header yellow-bg dark-text">
-          <span class="col-icon">📦</span><span>READY TO DISPATCH</span>
+          <span>READY TO DISPATCH</span>
           <span class="col-count" id="countReady">0</span>
         </div>
         <div class="kanban-cards" id="col-ready"><div class="empty-col">No orders ready</div></div>
       </div>
       <div class="kanban-col">
         <div class="kanban-header dark-bg">
-          <span class="col-icon">🚚</span><span>DISPATCHED</span>
+          <span>DISPATCHED</span>
           <span class="col-count" id="countDispatched">0</span>
         </div>
         <div class="kanban-cards" id="col-dispatched"><div class="empty-col">No dispatched orders</div></div>
@@ -278,7 +278,7 @@
 
       <div class="pipeline-col">
         <div class="kanban-header blue-bg">
-          <span class="col-icon">💼</span><span>SALE</span>
+          <span>SALE</span>
           <span class="col-count" id="pipe-count-sale">0</span>
         </div>
         <div class="pipeline-cards" id="pipe-sale"><div class="empty-col">No new orders</div></div>
@@ -288,7 +288,7 @@
 
       <div class="pipeline-col">
         <div class="kanban-header yellow-bg dark-text">
-          <span class="col-icon">📦</span><span>ORDER PICKED</span>
+          <span>ORDER PICKED</span>
           <span class="col-count" id="pipe-count-order-picked">0</span>
         </div>
         <div class="pipeline-cards" id="pipe-order-picked"><div class="empty-col">Nothing to pick</div></div>
@@ -298,7 +298,7 @@
 
       <div class="pipeline-col">
         <div class="kanban-header dark-bg">
-          <span class="col-icon">🚚</span><span>DISPATCHED</span>
+          <span>DISPATCHED</span>
           <span class="col-count" id="pipe-count-dispatched">0</span>
         </div>
         <div class="pipeline-cards" id="pipe-dispatched"><div class="empty-col">Nothing dispatched</div></div>
@@ -308,7 +308,7 @@
 
       <div class="pipeline-col">
         <div class="kanban-header green-bg">
-          <span class="col-icon">🧾</span><span>INVOICE</span>
+          <span>INVOICE</span>
           <span class="col-count" id="pipe-count-invoice">0</span>
         </div>
         <div class="pipeline-cards" id="pipe-invoice"><div class="empty-col">Nothing to invoice</div></div>
@@ -405,16 +405,14 @@
 
     <!-- Pallet breakdown -->
     <div class="sales-pallets">
-      <div class="pallet-card">
-        <div class="pallet-icon">🧺</div>
+      <div class="pallet-card pallet-card-bags">
         <div class="pallet-detail">
           <div class="pallet-count" id="sales-stat-bag-pallets">0</div>
           <div class="pallet-label">Bag Pallets</div>
           <div class="pallet-sub"><span id="sales-total-bags">0</span> Bags ÷ 56 per pallet</div>
         </div>
       </div>
-      <div class="pallet-card">
-        <div class="pallet-icon">📦</div>
+      <div class="pallet-card pallet-card-tubs">
         <div class="pallet-detail">
           <div class="pallet-count" id="sales-stat-tub-pallets">0</div>
           <div class="pallet-label">Tub Pallets</div>

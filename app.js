@@ -54,11 +54,11 @@ function withTimeout(promise, ms = 12000) {
 const PIPELINE_STAGES = ['Sale', 'Order Picked', 'Dispatched', 'Invoice', 'Completed'];
 const SAFETY_PRODUCTS = ['Polymer Barrier', 'Steel Barrier', 'Bollard', 'Rack Guard', 'Column Protector'];
 const STAGE_NOTIFY = {
-  'Sale':         { role: 'operations', msg: o => `📦 New order ${o.id} from ${o.customer_name} — ready to pick` },
-  'Order Picked': { role: 'operations', msg: o => `✅ ${o.id} picked — ready to dispatch` },
-  'Dispatched':   { role: 'accounts',   msg: o => `🚚 ${o.id} dispatched to ${o.customer_name} — ready to invoice` },
-  'Invoice':      { role: 'accounts',   msg: o => `🧾 ${o.id} ready to invoice — action required` },
-  'Completed':    { role: 'sales',      msg: o => `✔ ${o.id} invoice complete — order closed` },
+  'Sale':         { role: 'operations', msg: o => `New order ${o.id} from ${o.customer_name} — ready to pick` },
+  'Order Picked': { role: 'operations', msg: o => `${o.id} picked — ready to dispatch` },
+  'Dispatched':   { role: 'accounts',   msg: o => `${o.id} dispatched to ${o.customer_name} — ready to invoice` },
+  'Invoice':      { role: 'accounts',   msg: o => `${o.id} ready to invoice — action required` },
+  'Completed':    { role: 'sales',      msg: o => `${o.id} invoice complete — order closed` },
 };
 
 // ===================== STATE =====================
@@ -489,7 +489,7 @@ function buildCard(order) {
     <div class="card-address">${order.delivery_address}</div>
     <div class="card-items-summary">${itemChips}${more}</div>
     <div class="card-footer">
-      <span class="card-date">${overdue ? '⚠ OVERDUE · ' : ''}${dateStr}</span>
+      <span class="card-date">${overdue ? 'OVERDUE · ' : ''}${dateStr}</span>
       <span class="card-rep">${order.sales_rep}</span>
     </div>`;
   card.addEventListener('click', () => openModal(order.id));
@@ -537,9 +537,9 @@ function buildPipelineCard(order, stage) {
   // Determine the action button / badge
   let actionHTML;
   if (stage === 'Completed') {
-    actionHTML = '<div class="stage-complete invoice-done">✔ Invoice Complete</div>';
+    actionHTML = '<div class="stage-complete invoice-done">Invoice Complete</div>';
   } else if (stage === 'Invoice') {
-    actionHTML = `<button class="btn-advance btn-complete-invoice" data-id="${order.id}">✔ Mark Invoice Complete</button>`;
+    actionHTML = `<button class="btn-advance btn-complete-invoice" data-id="${order.id}">Mark Invoice Complete</button>`;
   } else {
     const stageIdx  = PIPELINE_STAGES.indexOf(stage);
     const nextStage = PIPELINE_STAGES[stageIdx + 1];
@@ -1105,7 +1105,7 @@ function openModal(orderId) {
     // CM orders: status is driven automatically by the pipeline — no manual buttons
     const stageLabel = document.createElement('div');
     stageLabel.className = 'modal-cm-note';
-    stageLabel.textContent = '📋 Status updates automatically via the CM Pipeline';
+    stageLabel.textContent = 'Status updates automatically via the CM Pipeline';
     footer.appendChild(stageLabel);
   } else {
     // Safety Barrier orders: manual status buttons

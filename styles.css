@@ -840,7 +840,7 @@ body { font-family: var(--font); background: var(--gray); color: var(--dark); mi
   align-items: center;
 }
 .notif-bell:hover { background: var(--gray); }
-.notif-icon { font-size: 1.1rem; }
+.notif-icon { display: block; color: var(--gray-txt); }
 
 .notif-count {
   position: absolute;
@@ -1268,13 +1268,11 @@ body { font-family: var(--font); background: var(--gray); color: var(--dark); mi
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 22px 28px;
-  display: flex;
-  align-items: center;
-  gap: 22px;
   border-left: 4px solid var(--blue);
 }
 
-.pallet-icon { font-size: 2.4rem; flex-shrink: 0; }
+.pallet-card-bags { border-left-color: var(--blue); }
+.pallet-card-tubs { border-left-color: var(--yellow-dk); }
 
 .pallet-count {
   font-size: 2.6rem;
