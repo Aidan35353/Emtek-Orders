@@ -67,7 +67,7 @@ body { font-family: var(--font); background: var(--gray); color: var(--dark); mi
 .nav-btn:hover { color: var(--blue); background: rgba(0,131,201,0.07); }
 .nav-btn.active { color: var(--blue); border-bottom: 3px solid var(--blue); border-radius: 0; }
 
-.nav-right { margin-left: auto; }
+.nav-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 .order-count-badge {
   background: var(--yellow);
   color: var(--dark);
@@ -846,7 +846,7 @@ body { font-family: var(--font); background: var(--gray); color: var(--dark); mi
   align-items: center;
 }
 .notif-bell:hover { background: var(--gray); }
-.notif-icon { display: block; color: var(--gray-txt); }
+.notif-icon { display: flex; align-items: center; color: var(--gray-txt); }
 
 .notif-count {
   position: absolute;
