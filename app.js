@@ -1,5 +1,18 @@
 'use strict';
 
+// Global error handler — shows any crash as a visible message instead of blank screen
+window.addEventListener('error', function (e) {
+  console.error('App error:', e.message, e.filename, e.lineno);
+  try {
+    document.getElementById('loadingOverlay').classList.add('hidden');
+    var ls = document.getElementById('loginScreen');
+    ls.classList.remove('hidden');
+    var le = document.getElementById('loginError');
+    le.textContent = 'App error: ' + e.message;
+    le.classList.remove('hidden');
+  } catch (_) {}
+});
+
 // ===================== SUPABASE =====================
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_ANON); // single client: auth + realtime
@@ -24,8 +37,8 @@ async function api(method, path, body) {
   const text = await res.text();
   if (!text) return null;
   let data;
-  try { data = JSON.parse(text); } catch { return text; }
-  if (!res.ok) throw new Error(data?.message || data?.hint || 'HTTP ' + res.status);
+  try { data = JSON.parse(text); } catch (e) { return text; }
+  if (!res.ok) throw new Error((data && (data.message || data.hint)) || 'HTTP ' + res.status);
   return data;
 }
 
