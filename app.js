@@ -18,6 +18,7 @@ const STAGE_NOTIFY = {
 let orders      = [];
 let notifList   = [];
 let currentUser = null;
+let authUser    = null;
 let activeModal = null;
 
 // ===================== LOADING =====================
@@ -68,10 +69,19 @@ const profileSetup = document.getElementById('profileSetup');
 const profileForm  = document.getElementById('profileForm');
 
 async function loadProfile(user) {
+  // Check Supabase metadata first
   const meta = user.user_metadata;
   if (meta && meta.full_name && meta.role) {
     currentUser = { id: user.id, email: user.email, full_name: meta.full_name, role: meta.role };
     document.getElementById('navUserName').textContent = `${meta.full_name} · ${meta.role.charAt(0).toUpperCase() + meta.role.slice(1)}`;
+    return true;
+  }
+  // Fallback to localStorage
+  const stored = localStorage.getItem(`emtek_profile_${user.id}`);
+  if (stored) {
+    const { full_name, role } = JSON.parse(stored);
+    currentUser = { id: user.id, email: user.email, full_name, role };
+    document.getElementById('navUserName').textContent = `${full_name} · ${role.charAt(0).toUpperCase() + role.slice(1)}`;
     return true;
   }
   return false;
@@ -85,16 +95,17 @@ profileForm.addEventListener('submit', async e => {
   btn.textContent = 'Saving...';
   btn.disabled = true;
 
-  const { error } = await db.auth.updateUser({ data: { full_name, role } });
+  // Save to localStorage immediately — no async calls that could hang
+  localStorage.setItem(`emtek_profile_${authUser.id}`, JSON.stringify({ full_name, role }));
 
   btn.textContent = 'SAVE & CONTINUE';
   btn.disabled = false;
 
-  if (error) { showToast('Failed to save profile', 'error'); console.error(error); return; }
+  // Try saving to Supabase in background (non-blocking)
+  db.auth.updateUser({ data: { full_name, role } }).catch(err => console.warn('Profile sync:', err));
 
-  const { data: { user } } = await db.auth.getUser();
   profileSetup.classList.add('hidden');
-  await loadProfile(user);
+  await loadProfile(authUser);
   await loadAllData();
   showView('dashboard');
 });
@@ -616,6 +627,7 @@ let appInitialised = false;
 async function initApp(user) {
   if (appInitialised) return;
   appInitialised = true;
+  authUser = user;
   showLoading('Loading...');
   try {
     const hasProfile = await loadProfile(user);
