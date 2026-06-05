@@ -3,8 +3,22 @@
 // Netlify serverless function — secure proxy to Prospect CRM OData API
 // PROSPECT_TOKEN env var is NEVER exposed to the browser
 
+const BASE = 'https://crm-odata-v1.prospect365.com';
+
+// Entity names to try in order — Prospect365 accounts vary
+const CANDIDATE_ENTITIES = [
+  'Products',
+  'StockItems',
+  'Product',
+  'CatalogueItems',
+  'ProductCatalogueItems',
+  'Items',
+  'Inventory',
+  'InventoryItems',
+  'StockLevels',
+];
+
 exports.handler = async function (event) {
-  // Only allow GET
   if (event.httpMethod !== 'GET') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
@@ -18,27 +32,48 @@ exports.handler = async function (event) {
     };
   }
 
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    Accept:        'application/json',
+  };
+
   try {
+    // ── Step 1: discover which entity set exists ──────────────────────────
+    let entity = null;
+
+    for (const candidate of CANDIDATE_ENTITIES) {
+      const probe = await timedFetch(`${BASE}/${candidate}?$top=1`, headers, 8000);
+      if (probe.ok) { entity = candidate; break; }
+    }
+
+    // ── Step 2: if nothing matched, fetch the OData root to help debug ────
+    if (!entity) {
+      let rootInfo = null;
+      try {
+        const rootRes = await timedFetch(`${BASE}/`, headers, 8000);
+        if (rootRes.ok) rootInfo = await rootRes.json();
+      } catch (_) {}
+
+      return {
+        statusCode: 404,
+        headers: cors(),
+        body: JSON.stringify({
+          error: 'Could not find a product entity in Prospect CRM',
+          tried: CANDIDATE_ENTITIES,
+          // Return whatever the OData root lists so we can find the right name
+          availableEntities: rootInfo
+            ? (rootInfo.value || []).map(e => e.name || e.Name || e.url || e.URL)
+            : null,
+        }),
+      };
+    }
+
+    // ── Step 3: fetch all records (follow OData pagination) ───────────────
     let allProducts = [];
-    // OData endpoint — fetch up to 2,000 products across paginated responses
-    let url = 'https://crm-odata-v1.prospect365.com/Products?$top=1000&$orderby=Description';
+    let url = `${BASE}/${entity}?$top=1000&$orderby=Description`;
 
     for (let page = 0; page < 10 && url; page++) {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 15000);
-
-      let res;
-      try {
-        res = await fetch(url, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept:        'application/json',
-          },
-          signal: controller.signal,
-        });
-      } finally {
-        clearTimeout(timer);
-      }
+      const res = await timedFetch(url, headers, 15000);
 
       if (!res.ok) {
         const detail = await res.text().catch(() => '');
@@ -47,44 +82,39 @@ exports.handler = async function (event) {
           headers: cors(),
           body: JSON.stringify({
             error:  `Prospect CRM returned HTTP ${res.status}`,
+            entity,
             detail: detail.slice(0, 500),
           }),
         };
       }
 
       const json  = await res.json();
-      // OData wraps results in { value: [...] }; some APIs return a plain array
       const items = Array.isArray(json.value) ? json.value
                   : Array.isArray(json)       ? json
                   : [];
       allProducts = allProducts.concat(items);
-
-      // Follow OData nextLink for pagination
       url = json['@odata.nextLink'] || null;
     }
 
-    // ── Normalise field names ───────────────────────────────────────────────
-    // Prospect CRM field names are not always predictable — try every known
-    // variant and fall back gracefully so the page always renders something.
+    // ── Step 4: normalise field names ─────────────────────────────────────
     const products = allProducts.map(p => ({
-      name: p.Description         || p.Name             || p.ProductName    ||
-            p.description         || p.name             || p.productName    || '',
+      name: p.Description      || p.Name          || p.ProductName  ||
+            p.description      || p.name          || p.productName  || '',
 
       stock: pick(p, [
         'FreeStock', 'StockLevel', 'QuantityOnHand', 'FreeStockLevel',
         'Stock',     'Quantity',   'freeStock',       'stockLevel',
-        'quantityOnHand',
+        'quantityOnHand', 'CurrentStock', 'AvailableStock',
       ]),
 
-      category: p.GroupDescription    || p.CategoryDescription || p.ProductGroup     ||
+      category: p.GroupDescription    || p.CategoryDescription || p.ProductGroup  ||
                 p.Group               || p.Category            || p.groupDescription ||
-                p.categoryDescription || p.productGroup        || p.group            || '',
+                p.categoryDescription || p.productGroup        || p.group         || '',
 
-      sku: p.Reference   || p.SKU         || p.Code        || p.ProductCode  ||
-           p.reference   || p.sku         || p.code        || p.productCode  || '',
+      sku: p.Reference || p.SKU    || p.Code       || p.ProductCode ||
+           p.reference || p.sku    || p.code       || p.productCode || '',
     }));
 
-    // Filter out records with no name at all (blank spacers, etc.)
     const filtered = products.filter(p => p.name.trim() !== '');
 
     return {
@@ -93,10 +123,11 @@ exports.handler = async function (event) {
       body: JSON.stringify({
         products: filtered,
         total:    filtered.length,
-        // _fields lets us debug field mapping if stock/category appear empty
+        entity,                                              // which entity we used
         _fields:  allProducts.length > 0 ? Object.keys(allProducts[0]) : [],
       }),
     };
+
   } catch (err) {
     return {
       statusCode: 500,
@@ -106,7 +137,17 @@ exports.handler = async function (event) {
   }
 };
 
-// Pull first non-null value from a list of candidate field names
+// fetch with AbortController timeout
+async function timedFetch(url, headers, ms) {
+  const ctrl  = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { headers, signal: ctrl.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function pick(obj, keys) {
   for (const k of keys) {
     if (obj[k] != null) return obj[k];
