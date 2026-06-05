@@ -76,6 +76,37 @@ const HERO_CONTENT = {
   },
 };
 const SAFETY_PRODUCTS = ['Polymer Barrier', 'Steel Barrier', 'Bollard', 'Rack Guard', 'Column Protector'];
+
+// Products shown on the New Order form — the only ones we track on the Stock page
+const STOCK_PRODUCTS = [
+  // Construction Materials
+  { name: 'IRR 6mm',             category: 'Construction Materials' },
+  { name: 'IRR 10mm',            category: 'Construction Materials' },
+  { name: 'M60F',                category: 'Construction Materials' },
+  { name: 'Tough Patch',         category: 'Construction Materials' },
+  { name: 'QC10F',               category: 'Construction Materials' },
+  { name: 'M90',                 category: 'Construction Materials' },
+  { name: 'FP Smooth Grey',      category: 'Construction Materials' },
+  { name: 'FP Grey',             category: 'Construction Materials' },
+  { name: 'FP Smooth Limestone', category: 'Construction Materials' },
+  { name: 'FP Smooth Charcoal',  category: 'Construction Materials' },
+  { name: 'FP Limestone',        category: 'Construction Materials' },
+  { name: 'FP Charcoal',         category: 'Construction Materials' },
+  { name: 'FP Premium',          category: 'Construction Materials' },
+  { name: 'ProPrime',            category: 'Construction Materials' },
+  { name: 'Slipbond',            category: 'Construction Materials' },
+  { name: 'Cempoint',            category: 'Construction Materials' },
+  { name: 'Instaband Eco',       category: 'Construction Materials' },
+  { name: 'Instaline White',     category: 'Construction Materials' },
+  { name: 'Instaline Yellow',    category: 'Construction Materials' },
+  { name: 'SCJ',                 category: 'Construction Materials' },
+  // Safety Barriers
+  { name: 'Polymer Barrier',     category: 'Safety Barriers' },
+  { name: 'Steel Barrier',       category: 'Safety Barriers' },
+  { name: 'Bollard',             category: 'Safety Barriers' },
+  { name: 'Rack Guard',          category: 'Safety Barriers' },
+  { name: 'Column Protector',    category: 'Safety Barriers' },
+];
 const STAGE_NOTIFY = {
   'Sale':         { role: 'operations', msg: o => `New order ${o.id} from ${o.customer_name} — ready to pick` },
   'Order Picked': { role: 'operations', msg: o => `${o.id} picked — ready to dispatch` },
@@ -1242,26 +1273,53 @@ function showToast(msg, type = '') {
 }
 
 // ===================== STOCK PAGE =====================
-let stockData        = [];   // full list from Prospect CRM
+let stockData        = [];   // raw list from Prospect CRM
 let stockFetching    = false;
-let stockLastFetched = null; // Date object
+let stockLastFetched = null;
 
-const STOCK_LOW_THRESHOLD = 20; // units below this = "Low"
+const STOCK_LOW_THRESHOLD = 20; // below this = "Low Stock"
 
+// Return stock status for a level value
 function stockStatus(level) {
-  if (level === null || level === undefined || level === '') return 'unknown';
+  if (level === null || level === undefined) return 'none';
   const n = Number(level);
-  if (isNaN(n) || n <= 0)                    return 'out';
-  if (n < STOCK_LOW_THRESHOLD)               return 'low';
+  if (isNaN(n) || n <= 0)          return 'out';
+  if (n < STOCK_LOW_THRESHOLD)     return 'low';
   return 'in';
+}
+
+// Match each of our known products against whatever Prospect CRM returned.
+// Uses progressively looser matching so slight name differences still resolve.
+function matchStockToProducts(crmProducts) {
+  return STOCK_PRODUCTS.map(known => {
+    const kl = known.name.toLowerCase();
+    let match =
+      crmProducts.find(p => p.name.toLowerCase() === kl) ||
+      crmProducts.find(p => p.name.toLowerCase().startsWith(kl)) ||
+      crmProducts.find(p => p.name.toLowerCase().includes(kl)) ||
+      crmProducts.find(p => kl.includes(p.name.toLowerCase()) && p.name.length > 3);
+    return {
+      name:     known.name,
+      category: known.category,
+      stock:    match ? match.stock : null,
+      sku:      match ? match.sku   : '',
+      matched:  !!match,
+    };
+  });
 }
 
 async function fetchStock() {
   if (stockFetching) return;
   stockFetching = true;
 
-  const tbody = document.getElementById('stock-tbody');
-  if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="stock-table-empty stock-loading">Loading stock data from Prospect CRM...</td></tr>';
+  const dash = document.getElementById('stock-dashboard');
+  if (dash) dash.innerHTML = '<div class="stock-empty-state stock-loading">Loading live stock from Prospect CRM...</div>';
+
+  // Reset stats while loading
+  ['stock-count-in','stock-count-low','stock-count-out','stock-count-none'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = '—';
+  });
 
   try {
     const res  = await withTimeout(fetch('/.netlify/functions/stock'), 20000);
@@ -1269,7 +1327,7 @@ async function fetchStock() {
 
     if (!res.ok || json.error) {
       const msg = json.error || ('HTTP ' + res.status);
-      if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="stock-table-empty stock-error">Failed to load stock: ${msg}</td></tr>`;
+      if (dash) dash.innerHTML = `<div class="stock-empty-state stock-error">Could not load stock: ${msg}</div>`;
       showToast('Stock load failed — ' + msg, 'error');
       return;
     }
@@ -1277,97 +1335,92 @@ async function fetchStock() {
     stockData        = Array.isArray(json.products) ? json.products : [];
     stockLastFetched = new Date();
 
-    // Rebuild category filter from live data
-    buildStockCategoryFilter();
-    renderStock();
-
     const updEl = document.getElementById('stockLastUpdated');
     if (updEl) updEl.textContent = 'Updated ' + stockLastFetched.toLocaleTimeString('en-IE', { hour: '2-digit', minute: '2-digit' });
 
+    renderStock();
   } catch (err) {
-    if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="stock-table-empty stock-error">Connection error: ${err.message}</td></tr>`;
+    if (dash) dash.innerHTML = `<div class="stock-empty-state stock-error">Connection error: ${err.message}</div>`;
     showToast('Stock connection error', 'error');
   } finally {
     stockFetching = false;
   }
 }
 
-function buildStockCategoryFilter() {
-  const sel = document.getElementById('stockCategoryFilter');
-  if (!sel) return;
-  const categories = [...new Set(
-    stockData.map(p => p.category).filter(c => c && c.trim() !== '')
-  )].sort();
-  const current = sel.value;
-  sel.innerHTML = '<option value="">All Categories</option>' +
-    categories.map(c => `<option value="${c}">${c}</option>`).join('');
-  // Restore previous selection if it still exists
-  if (categories.includes(current)) sel.value = current;
-}
+function renderStock() {
+  const merged = matchStockToProducts(stockData);
 
-function getFilteredStock() {
-  const search   = (document.getElementById('stockSearch')?.value || '').toLowerCase().trim();
-  const cat      = document.getElementById('stockCategoryFilter')?.value || '';
-  const status   = document.getElementById('stockStatusFilter')?.value  || '';
+  // Apply search / status filter
+  const search = (document.getElementById('stockSearch')?.value || '').toLowerCase().trim();
+  const status = document.getElementById('stockStatusFilter')?.value || '';
 
-  return stockData.filter(p => {
-    if (search) {
-      const haystack = [p.name, p.sku, p.category].join(' ').toLowerCase();
-      if (!haystack.includes(search)) return false;
+  const filtered = merged.filter(p => {
+    if (search && !p.name.toLowerCase().includes(search) && !p.category.toLowerCase().includes(search)) return false;
+    if (status) {
+      const s = p.matched ? stockStatus(p.stock) : 'none';
+      if (s !== status) return false;
     }
-    if (cat    && p.category !== cat)              return false;
-    if (status && stockStatus(p.stock) !== status) return false;
     return true;
   });
-}
 
-function renderStock() {
-  const filtered = getFilteredStock();
-  const tbody    = document.getElementById('stock-tbody');
-
-  // Stats (always from full data, not filtered)
-  const total = stockData.length;
-  const inCnt = stockData.filter(p => stockStatus(p.stock) === 'in').length;
-  const lowCnt= stockData.filter(p => stockStatus(p.stock) === 'low').length;
-  const outCnt= stockData.filter(p => stockStatus(p.stock) === 'out' || stockStatus(p.stock) === 'unknown').length;
-
+  // Stats — always from full merged list so the counts don't jump on filter
   const setEl = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  setEl('stock-count-total', total);
-  setEl('stock-count-in',    inCnt);
-  setEl('stock-count-low',   lowCnt);
-  setEl('stock-count-out',   outCnt);
+  setEl('stock-count-in',   merged.filter(p => p.matched && stockStatus(p.stock) === 'in').length);
+  setEl('stock-count-low',  merged.filter(p => p.matched && stockStatus(p.stock) === 'low').length);
+  setEl('stock-count-out',  merged.filter(p => p.matched && stockStatus(p.stock) === 'out').length);
+  setEl('stock-count-none', merged.filter(p => !p.matched).length);
 
-  if (!tbody) return;
+  const dash = document.getElementById('stock-dashboard');
+  if (!dash) return;
 
   if (!stockData.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="stock-table-empty">No stock data available</td></tr>';
+    dash.innerHTML = '<div class="stock-empty-state">Click <strong>Refresh</strong> to load live stock data.</div>';
     return;
   }
-
   if (!filtered.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="stock-table-empty">No products match your filters</td></tr>';
+    dash.innerHTML = '<div class="stock-empty-state">No products match your filters.</div>';
     return;
   }
 
-  tbody.innerHTML = filtered.map(p => {
-    const status  = stockStatus(p.stock);
-    const stockDisplay = p.stock !== null && p.stock !== undefined ? Number(p.stock).toLocaleString('en-IE') : '—';
-    const badgeClass   = { in: 'badge-in', low: 'badge-low', out: 'badge-out', unknown: 'badge-out' }[status];
-    const badgeText    = { in: 'In Stock', low: 'Low Stock', out: 'Out of Stock', unknown: 'No Data' }[status];
-    const skuCell      = p.sku ? `<span class="stock-sku">${p.sku}</span>` : '<span class="stock-sku-none">—</span>';
-    const catCell      = p.category ? `<span class="cat-chip">${p.category}</span>` : '—';
-    return `<tr class="stock-row-${status}">
-      <td class="stock-name">${p.name}</td>
-      <td>${skuCell}</td>
-      <td>${catCell}</td>
-      <td class="stock-qty ${status === 'in' ? 'qty-in' : status === 'low' ? 'qty-low' : 'qty-out'}">${stockDisplay}</td>
-      <td><span class="stock-badge ${badgeClass}">${badgeText}</span></td>
-    </tr>`;
+  // Group by category, preserving the order they appear in STOCK_PRODUCTS
+  const groups = {};
+  filtered.forEach(p => {
+    if (!groups[p.category]) groups[p.category] = [];
+    groups[p.category].push(p);
+  });
+
+  const STATUS_META = {
+    in:   { badge: 'badge-in',   label: 'In Stock',     qtyClass: 'qty-in'  },
+    low:  { badge: 'badge-low',  label: 'Low Stock',    qtyClass: 'qty-low' },
+    out:  { badge: 'badge-out',  label: 'Out of Stock', qtyClass: 'qty-out' },
+    none: { badge: 'badge-none', label: 'Not in CRM',   qtyClass: 'qty-none'},
+  };
+
+  dash.innerHTML = Object.entries(groups).map(([cat, products]) => {
+    const cards = products.map(p => {
+      const s    = p.matched ? stockStatus(p.stock) : 'none';
+      const meta = STATUS_META[s];
+      const qty  = (s !== 'none' && p.stock !== null)
+        ? Number(p.stock).toLocaleString('en-IE')
+        : '—';
+      const sub  = s !== 'none' ? 'units' : 'not tracked';
+      return `<div class="stock-card stock-card-${s}">
+        <div class="stock-card-name">${p.name}</div>
+        <div class="stock-card-qty ${meta.qtyClass}">${qty}</div>
+        <div class="stock-card-sub">${sub}</div>
+        <span class="stock-badge ${meta.badge}">${meta.label}</span>
+      </div>`;
+    }).join('');
+
+    return `<div class="stock-group">
+      <div class="stock-group-header">${cat}</div>
+      <div class="stock-card-grid">${cards}</div>
+    </div>`;
   }).join('');
 }
 
-// Wire up stock controls
-['stockSearch', 'stockCategoryFilter', 'stockStatusFilter'].forEach(id => {
+// Wire up controls
+['stockSearch', 'stockStatusFilter'].forEach(id => {
   const el = document.getElementById(id);
   if (el) el.addEventListener('input', renderStock);
 });
@@ -1376,7 +1429,6 @@ document.getElementById('stockRefreshBtn')?.addEventListener('click', () => {
   stockData        = [];
   stockLastFetched = null;
   fetchStock();
-  showToast('Refreshing stock data...', '');
 });
 
 // ===================== INIT =====================

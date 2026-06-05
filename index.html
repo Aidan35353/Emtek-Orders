@@ -448,34 +448,29 @@
   <div id="view-stock" class="view hidden">
     <div class="section-header blue-bg">
       <h2>STOCK LEVELS</h2>
-      <p>Live product stock from Prospect CRM — updates on every page visit</p>
+      <p>Live product availability from Prospect CRM</p>
     </div>
 
     <!-- Controls row -->
     <div class="stock-controls">
       <div class="stock-controls-left">
-        <input type="text" id="stockSearch" placeholder="Search products, SKU, category..." />
-        <select id="stockCategoryFilter">
-          <option value="">All Categories</option>
-        </select>
+        <input type="text" id="stockSearch" placeholder="Search products..." />
         <select id="stockStatusFilter">
-          <option value="">All Stock Status</option>
+          <option value="">All Status</option>
           <option value="in">In Stock</option>
           <option value="low">Low Stock</option>
           <option value="out">Out of Stock</option>
+          <option value="none">Not in CRM</option>
         </select>
       </div>
       <div class="stock-controls-right">
+        <span class="stock-last-updated" id="stockLastUpdated"></span>
         <button id="stockRefreshBtn" class="btn-stock-refresh">Refresh</button>
       </div>
     </div>
 
     <!-- Summary stats -->
     <div class="stock-stats">
-      <div class="stock-stat-card stock-stat-blue">
-        <div class="stock-stat-num" id="stock-count-total">—</div>
-        <div class="stock-stat-label">Total Products</div>
-      </div>
       <div class="stock-stat-card stock-stat-green">
         <div class="stock-stat-num" id="stock-count-in">—</div>
         <div class="stock-stat-label">In Stock</div>
@@ -488,29 +483,14 @@
         <div class="stock-stat-num" id="stock-count-out">—</div>
         <div class="stock-stat-label">Out of Stock</div>
       </div>
+      <div class="stock-stat-card stock-stat-dark">
+        <div class="stock-stat-num" id="stock-count-none">—</div>
+        <div class="stock-stat-label">Not in CRM</div>
+      </div>
     </div>
 
-    <!-- Stock table -->
-    <div class="stock-table-wrap">
-      <div class="stock-table-header">
-        <h3>PRODUCT STOCK</h3>
-        <span class="stock-last-updated" id="stockLastUpdated"></span>
-      </div>
-      <table class="stock-table">
-        <thead>
-          <tr>
-            <th>Product Name</th>
-            <th>SKU / Reference</th>
-            <th>Category</th>
-            <th>Stock Level</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody id="stock-tbody">
-          <tr><td colspan="5" class="stock-table-empty">Loading stock data...</td></tr>
-        </tbody>
-      </table>
-    </div>
+    <!-- Product dashboard — rendered by JS -->
+    <div id="stock-dashboard"></div>
   </div>
 
   <!-- ORDER DETAIL MODAL -->
