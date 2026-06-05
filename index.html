@@ -62,6 +62,7 @@
       <button class="nav-btn" data-view="new-order">New Order</button>
       <button class="nav-btn" data-view="pipeline">CM Pipeline</button>
       <button class="nav-btn" data-view="sales">Sales</button>
+      <button class="nav-btn" data-view="stock">Stock</button>
     </div>
     <div class="nav-right">
       <span class="nav-user" id="navUserName"></span>
@@ -438,6 +439,75 @@
         </thead>
         <tbody id="sales-product-tbody">
           <tr><td colspan="4" class="sales-table-empty">No data yet</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ======================== STOCK VIEW ======================== -->
+  <div id="view-stock" class="view hidden">
+    <div class="section-header blue-bg">
+      <h2>STOCK LEVELS</h2>
+      <p>Live product stock from Prospect CRM — updates on every page visit</p>
+    </div>
+
+    <!-- Controls row -->
+    <div class="stock-controls">
+      <div class="stock-controls-left">
+        <input type="text" id="stockSearch" placeholder="Search products, SKU, category..." />
+        <select id="stockCategoryFilter">
+          <option value="">All Categories</option>
+        </select>
+        <select id="stockStatusFilter">
+          <option value="">All Stock Status</option>
+          <option value="in">In Stock</option>
+          <option value="low">Low Stock</option>
+          <option value="out">Out of Stock</option>
+        </select>
+      </div>
+      <div class="stock-controls-right">
+        <button id="stockRefreshBtn" class="btn-stock-refresh">Refresh</button>
+      </div>
+    </div>
+
+    <!-- Summary stats -->
+    <div class="stock-stats">
+      <div class="stock-stat-card stock-stat-blue">
+        <div class="stock-stat-num" id="stock-count-total">—</div>
+        <div class="stock-stat-label">Total Products</div>
+      </div>
+      <div class="stock-stat-card stock-stat-green">
+        <div class="stock-stat-num" id="stock-count-in">—</div>
+        <div class="stock-stat-label">In Stock</div>
+      </div>
+      <div class="stock-stat-card stock-stat-yellow">
+        <div class="stock-stat-num" id="stock-count-low">—</div>
+        <div class="stock-stat-label">Low Stock</div>
+      </div>
+      <div class="stock-stat-card stock-stat-red">
+        <div class="stock-stat-num" id="stock-count-out">—</div>
+        <div class="stock-stat-label">Out of Stock</div>
+      </div>
+    </div>
+
+    <!-- Stock table -->
+    <div class="stock-table-wrap">
+      <div class="stock-table-header">
+        <h3>PRODUCT STOCK</h3>
+        <span class="stock-last-updated" id="stockLastUpdated"></span>
+      </div>
+      <table class="stock-table">
+        <thead>
+          <tr>
+            <th>Product Name</th>
+            <th>SKU / Reference</th>
+            <th>Category</th>
+            <th>Stock Level</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="stock-tbody">
+          <tr><td colspan="5" class="stock-table-empty">Loading stock data...</td></tr>
         </tbody>
       </table>
     </div>

@@ -70,6 +70,10 @@ const HERO_CONTENT = {
     left:  { label: 'SALES',        sub: 'Monthly performance',             headline: 'Sales Dashboard'  },
     right: { label: 'ANALYTICS',    sub: 'Progress vs target',              headline: 'Pallet Tracker'   },
   },
+  'stock': {
+    left:  { label: 'STOCK',        sub: 'Live from Prospect CRM',          headline: 'Stock Levels'     },
+    right: { label: 'INVENTORY',    sub: 'Real-time product availability',  headline: 'Live Overview'    },
+  },
 };
 const SAFETY_PRODUCTS = ['Polymer Barrier', 'Steel Barrier', 'Bollard', 'Rack Guard', 'Column Protector'];
 const STAGE_NOTIFY = {
@@ -247,6 +251,7 @@ const views   = {
   'new-order': document.getElementById('view-new-order'),
   pipeline:    document.getElementById('view-pipeline'),
   sales:       document.getElementById('view-sales'),
+  stock:       document.getElementById('view-stock'),
 };
 const navBtns = document.querySelectorAll('.nav-btn[data-view]');
 
@@ -268,6 +273,7 @@ function showView(name) {
   if (name === 'dashboard') renderDashboard();
   if (name === 'pipeline')  renderPipeline();
   if (name === 'sales')     renderSalesDashboard();
+  if (name === 'stock')     fetchStock();
 }
 navBtns.forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.view)));
 document.getElementById('heroPanelLeft').addEventListener('click',  () => showView('new-order'));
@@ -1234,6 +1240,144 @@ function showToast(msg, type = '') {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toast.classList.add('hidden'), 3200);
 }
+
+// ===================== STOCK PAGE =====================
+let stockData        = [];   // full list from Prospect CRM
+let stockFetching    = false;
+let stockLastFetched = null; // Date object
+
+const STOCK_LOW_THRESHOLD = 20; // units below this = "Low"
+
+function stockStatus(level) {
+  if (level === null || level === undefined || level === '') return 'unknown';
+  const n = Number(level);
+  if (isNaN(n) || n <= 0)                    return 'out';
+  if (n < STOCK_LOW_THRESHOLD)               return 'low';
+  return 'in';
+}
+
+async function fetchStock() {
+  if (stockFetching) return;
+  stockFetching = true;
+
+  const tbody = document.getElementById('stock-tbody');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="stock-table-empty stock-loading">Loading stock data from Prospect CRM...</td></tr>';
+
+  try {
+    const res  = await withTimeout(fetch('/.netlify/functions/stock'), 20000);
+    const json = await res.json();
+
+    if (!res.ok || json.error) {
+      const msg = json.error || ('HTTP ' + res.status);
+      if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="stock-table-empty stock-error">Failed to load stock: ${msg}</td></tr>`;
+      showToast('Stock load failed — ' + msg, 'error');
+      return;
+    }
+
+    stockData        = Array.isArray(json.products) ? json.products : [];
+    stockLastFetched = new Date();
+
+    // Rebuild category filter from live data
+    buildStockCategoryFilter();
+    renderStock();
+
+    const updEl = document.getElementById('stockLastUpdated');
+    if (updEl) updEl.textContent = 'Updated ' + stockLastFetched.toLocaleTimeString('en-IE', { hour: '2-digit', minute: '2-digit' });
+
+  } catch (err) {
+    if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="stock-table-empty stock-error">Connection error: ${err.message}</td></tr>`;
+    showToast('Stock connection error', 'error');
+  } finally {
+    stockFetching = false;
+  }
+}
+
+function buildStockCategoryFilter() {
+  const sel = document.getElementById('stockCategoryFilter');
+  if (!sel) return;
+  const categories = [...new Set(
+    stockData.map(p => p.category).filter(c => c && c.trim() !== '')
+  )].sort();
+  const current = sel.value;
+  sel.innerHTML = '<option value="">All Categories</option>' +
+    categories.map(c => `<option value="${c}">${c}</option>`).join('');
+  // Restore previous selection if it still exists
+  if (categories.includes(current)) sel.value = current;
+}
+
+function getFilteredStock() {
+  const search   = (document.getElementById('stockSearch')?.value || '').toLowerCase().trim();
+  const cat      = document.getElementById('stockCategoryFilter')?.value || '';
+  const status   = document.getElementById('stockStatusFilter')?.value  || '';
+
+  return stockData.filter(p => {
+    if (search) {
+      const haystack = [p.name, p.sku, p.category].join(' ').toLowerCase();
+      if (!haystack.includes(search)) return false;
+    }
+    if (cat    && p.category !== cat)              return false;
+    if (status && stockStatus(p.stock) !== status) return false;
+    return true;
+  });
+}
+
+function renderStock() {
+  const filtered = getFilteredStock();
+  const tbody    = document.getElementById('stock-tbody');
+
+  // Stats (always from full data, not filtered)
+  const total = stockData.length;
+  const inCnt = stockData.filter(p => stockStatus(p.stock) === 'in').length;
+  const lowCnt= stockData.filter(p => stockStatus(p.stock) === 'low').length;
+  const outCnt= stockData.filter(p => stockStatus(p.stock) === 'out' || stockStatus(p.stock) === 'unknown').length;
+
+  const setEl = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  setEl('stock-count-total', total);
+  setEl('stock-count-in',    inCnt);
+  setEl('stock-count-low',   lowCnt);
+  setEl('stock-count-out',   outCnt);
+
+  if (!tbody) return;
+
+  if (!stockData.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="stock-table-empty">No stock data available</td></tr>';
+    return;
+  }
+
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="stock-table-empty">No products match your filters</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(p => {
+    const status  = stockStatus(p.stock);
+    const stockDisplay = p.stock !== null && p.stock !== undefined ? Number(p.stock).toLocaleString('en-IE') : '—';
+    const badgeClass   = { in: 'badge-in', low: 'badge-low', out: 'badge-out', unknown: 'badge-out' }[status];
+    const badgeText    = { in: 'In Stock', low: 'Low Stock', out: 'Out of Stock', unknown: 'No Data' }[status];
+    const skuCell      = p.sku ? `<span class="stock-sku">${p.sku}</span>` : '<span class="stock-sku-none">—</span>';
+    const catCell      = p.category ? `<span class="cat-chip">${p.category}</span>` : '—';
+    return `<tr class="stock-row-${status}">
+      <td class="stock-name">${p.name}</td>
+      <td>${skuCell}</td>
+      <td>${catCell}</td>
+      <td class="stock-qty ${status === 'in' ? 'qty-in' : status === 'low' ? 'qty-low' : 'qty-out'}">${stockDisplay}</td>
+      <td><span class="stock-badge ${badgeClass}">${badgeText}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// Wire up stock controls
+['stockSearch', 'stockCategoryFilter', 'stockStatusFilter'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', renderStock);
+});
+
+document.getElementById('stockRefreshBtn')?.addEventListener('click', () => {
+  stockData        = [];
+  stockLastFetched = null;
+  fetchStock();
+  showToast('Refreshing stock data...', '');
+});
 
 // ===================== INIT =====================
 let appInitialised = false;
