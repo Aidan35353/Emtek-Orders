@@ -91,9 +91,7 @@ const STOCK_PRODUCTS = [
   { name: 'FP Grey',             category: 'Construction Materials', prospectSku: 'EFP' },
   { name: 'FP Smooth Limestone', category: 'Construction Materials', prospectSku: 'EFP-LIMESTONE-SMOOTH' },
   { name: 'FP Smooth Charcoal',  category: 'Construction Materials', prospectSku: 'EFP-CHAR-SMOOTH' },
-  { name: 'FP Limestone',        category: 'Construction Materials' }, // no Prospect SKU found — check if still stocked
   { name: 'FP Charcoal',         category: 'Construction Materials', prospectSku: 'EFP-CHAR' },
-  { name: 'FP Premium',          category: 'Construction Materials' }, // no Prospect SKU found — check if still stocked
   { name: 'ProPrime',            category: 'Construction Materials', prospectSku: 'EPP-20' },
   { name: 'Slipbond',            category: 'Construction Materials', prospectSku: 'ESLIPBOND' },
   { name: 'Cempoint',            category: 'Construction Materials', prospectSku: 'ECEMPOINT-NAT' },
