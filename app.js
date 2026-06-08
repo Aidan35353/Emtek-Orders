@@ -1346,15 +1346,24 @@ async function fetchStock() {
 
     renderStock();
 
-    // ── Temporary debug panel — shows raw Prospect names if nothing matched
+    // ── Temporary debug panel — shows raw data when nothing matched
     const matched = matchStockToProducts(stockData).filter(p => p.matched).length;
     const dash    = document.getElementById('stock-dashboard');
-    if (matched === 0 && stockData.length > 0 && dash) {
-      const names = stockData.slice(0, 50).map(p => p.name).filter(Boolean);
-      const debugHtml = `<div class="stock-debug-panel">
-        <strong>Debug — first ${names.length} product names returned by Prospect CRM (entity: ${json.entity || '?'}):</strong>
-        <div class="stock-debug-names">${names.map(n => `<span>${n}</span>`).join('')}</div>
-      </div>`;
+    if (dash && (matched === 0 || stockData.length === 0)) {
+      const entity  = json.entity  || '?';
+      const fields  = json._fields || [];
+      const sample  = json._sample || [];
+      let debugHtml = `<div class="stock-debug-panel">
+        <strong>Debug — Prospect entity: <code>${entity}</code> · ${json.total ?? 0} total records · ${fields.length} fields</strong><br>
+        <em>Fields: ${fields.join(', ') || 'none'}</em>`;
+      if (sample.length) {
+        debugHtml += `<div class="stock-debug-names" style="margin-top:8px;flex-direction:column;gap:4px;">`;
+        sample.forEach((rec, i) => {
+          debugHtml += `<span style="display:block;font-family:monospace;font-size:0.72rem;white-space:pre-wrap;">${'Record ' + (i+1) + ': ' + JSON.stringify(rec, null, 0)}</span>`;
+        });
+        debugHtml += `</div>`;
+      }
+      debugHtml += `</div>`;
       dash.insertAdjacentHTML('beforeend', debugHtml);
     }
   } catch (err) {

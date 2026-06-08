@@ -114,7 +114,9 @@ exports.handler = async function (event) {
         products: filtered,
         total: filtered.length,
         entity,
-        _fields: allProducts.length > 0 ? Object.keys(allProducts[0]) : [],
+        _fields:  allProducts.length > 0 ? Object.keys(allProducts[0]) : [],
+        // First 3 raw records so we can identify the correct field names
+        _sample:  allProducts.slice(0, 3),
       }),
     };
 
