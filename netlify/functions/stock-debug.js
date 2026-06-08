@@ -15,8 +15,8 @@ exports.handler = async function () {
   let out = '';
 
   const candidates = [
-    'Inventories', 'ProductItems', 'StockByWarehouses', 'StockByBins',
-    'Products', 'StockItems',
+    'Inventories', 'InventorySearch', 'ProductItems', 'ProductItemSearch',
+    'StockByWarehouses', 'StockByBins',
   ];
 
   out += '=== ENTITY PROBE ===\n';

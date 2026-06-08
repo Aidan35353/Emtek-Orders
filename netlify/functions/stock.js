@@ -8,7 +8,9 @@ const BASE = 'https://crm-odata-v1.prospect365.com';
 // Specific stock/product entities to try — in priority order
 const CANDIDATE_ENTITIES = [
   'Inventories',       // Prospect365 standard inventory entity
+  'InventorySearch',   // Prospect365 inventory search/query view
   'ProductItems',      // alternate product entity
+  'ProductItemSearch', // product item search view
   'StockByWarehouses', // stock-level view
   'StockByBins',
 ];
