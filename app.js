@@ -98,8 +98,8 @@ const STOCK_PRODUCTS = [
   { name: 'Slipbond',            category: 'Construction Materials', prospectSku: 'ESLIPBOND' },
   { name: 'Cempoint',            category: 'Construction Materials', prospectSku: 'ECEMPOINT-NAT' },
   { name: 'Instaband Eco',       category: 'Construction Materials', prospectSku: 'EINSTABAND-ECO' },
-  { name: 'Instaline White',     category: 'Construction Materials' }, // no Prospect SKU found — check if still stocked
-  { name: 'Instaline Yellow',    category: 'Construction Materials' }, // no Prospect SKU found — check if still stocked
+  { name: 'Instaline White',     category: 'Construction Materials', prospectSku: 'EINSTALINE-W' },
+  { name: 'Instaline Yellow',    category: 'Construction Materials', prospectSku: 'EINSTALINE-Y' },
   { name: 'SCJ',                 category: 'Construction Materials', prospectSku: 'ESCJ' },
   // Safety Barriers
   { name: 'Polymer Barrier',     category: 'Safety Barriers' },
