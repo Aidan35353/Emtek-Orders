@@ -26,7 +26,7 @@ exports.handler = async function (event) {
   }
 
   // 2. Try a few entity names and show first record of each that responds
-  const candidates = ['Products','StockItems','CatalogueItems','Items','Inventory','Parts','SalesItems'];
+  const candidates = ['Inventories','ProductItems','StockByWarehouses','StockByBins','Products','StockItems'];
   out += '=== ENTITY PROBE ===\n';
   for (const c of candidates) {
     try {

@@ -6,9 +6,12 @@
 const BASE = 'https://crm-odata-v1.prospect365.com';
 
 const CANDIDATE_ENTITIES = [
-  'Products', 'StockItems', 'Product', 'CatalogueItems',
-  'ProductCatalogueItems', 'Items', 'Inventory', 'InventoryItems',
-  'StockLevels', 'ProductGroups', 'SalesItems', 'Parts',
+  'Inventories',       // Prospect365 standard product/stock entity
+  'ProductItems',      // alternate product entity
+  'StockByWarehouses', // stock-level view
+  'StockByBins',
+  'Products',
+  'StockItems',
 ];
 
 exports.handler = async function (event) {
@@ -92,17 +95,22 @@ exports.handler = async function (event) {
 
     // ── Step 5: normalise field names ─────────────────────────────────────
     const products = allProducts.map(p => ({
-      name: p.Description   || p.Name          || p.ProductName    ||
-            p.description   || p.name          || p.productName    || '',
+      // Prospect365 Inventories entity uses StockDescription / StockCode
+      name: p.StockDescription || p.Description || p.Name       ||
+            p.ProductName      || p.ItemDescription || p.description ||
+            p.name             || p.productName  || '',
       stock: pick(p, [
-        'FreeStock','StockLevel','QuantityOnHand','FreeStockLevel',
-        'Stock','Quantity','freeStock','stockLevel','quantityOnHand',
-        'CurrentStock','AvailableStock',
+        'FreeStock','QuantityInStock','StockQuantity','QtyOnHand',
+        'StockLevel','QuantityOnHand','FreeStockLevel','AvailableQty',
+        'Stock','Quantity','CurrentStock','AvailableStock',
+        'freeStock','stockLevel','quantityOnHand',
       ]),
-      category: p.GroupDescription || p.CategoryDescription || p.ProductGroup ||
-                p.Group  || p.Category || p.groupDescription || p.category    || '',
-      sku: p.Reference || p.SKU  || p.Code || p.ProductCode ||
-           p.reference || p.sku  || p.code || p.productCode  || '',
+      category: p.GroupDescription  || p.StockGroup   || p.ProductGroup  ||
+                p.CategoryDescription || p.Group      || p.Category      ||
+                p.groupDescription  || p.category     || '',
+      sku: p.StockCode  || p.Reference || p.ItemCode  || p.SKU   ||
+           p.Code       || p.ProductCode || p.reference || p.sku  ||
+           p.code       || p.productCode || '',
     }));
 
     const filtered = products.filter(p => p.name.trim() !== '');
