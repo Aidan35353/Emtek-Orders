@@ -80,21 +80,23 @@ const SAFETY_PRODUCTS = ['Polymer Barrier', 'Steel Barrier', 'Bollard', 'Rack Gu
 // Products shown on the New Order form — the only ones we track on the Stock page
 const STOCK_PRODUCTS = [
   // Construction Materials
-  { name: 'IRR 6mm',             category: 'Construction Materials' },
-  { name: 'IRR 10mm',            category: 'Construction Materials' },
+  // prospectName = exact Description field value in Prospect CRM
+  { name: 'IRR 6mm',             category: 'Construction Materials', prospectName: 'Ultracrete IRR Instant Road Repair 25kg Tubs 6mm' },
+  { name: 'IRR 10mm',            category: 'Construction Materials', prospectName: 'Ultracrete Instant Road Repair 25kg Tub 10mm' },
   { name: 'M60F',                category: 'Construction Materials' },
-  { name: 'Tough Patch',         category: 'Construction Materials' },
+  { name: 'Tough Patch Tubs',    category: 'Construction Materials', prospectName: 'Ultracrete ToughPatch Tubs - 25kg Tubs' },
+  { name: 'Tough Patch Bags',    category: 'Construction Materials', prospectName: 'Ultracrete ToughPatch Bags - 25kg' },
   { name: 'QC10F',               category: 'Construction Materials' },
   { name: 'M90',                 category: 'Construction Materials' },
-  { name: 'FP Smooth Grey',      category: 'Construction Materials' },
-  { name: 'FP Grey',             category: 'Construction Materials' },
-  { name: 'FP Smooth Limestone', category: 'Construction Materials' },
-  { name: 'FP Smooth Charcoal',  category: 'Construction Materials' },
+  { name: 'FP Smooth Grey',      category: 'Construction Materials', prospectName: 'Ultrascape Flowpoint Rapid Set Grout Smooth' },
+  { name: 'FP Grey',             category: 'Construction Materials', prospectName: 'Ultrascape Flowpoint Rapid Set Grout-NATURAL-25kg Bag' },
+  { name: 'FP Smooth Limestone', category: 'Construction Materials', prospectName: 'Ultrascape Flowpoint Limestone Smooth' },
+  { name: 'FP Smooth Charcoal',  category: 'Construction Materials', prospectName: 'Ultrascape Flowpoint Charcoal Smooth Rapid Set G - 25kg Bags' },
   { name: 'FP Limestone',        category: 'Construction Materials' },
-  { name: 'FP Charcoal',         category: 'Construction Materials' },
+  { name: 'FP Charcoal',         category: 'Construction Materials', prospectName: 'Ultrascape Flowpoint Rapid Set Grout-CHARCOAL-25kg bag' },
   { name: 'FP Premium',          category: 'Construction Materials' },
   { name: 'ProPrime',            category: 'Construction Materials' },
-  { name: 'Slipbond',            category: 'Construction Materials' },
+  { name: 'Slipbond',            category: 'Construction Materials', prospectName: 'Ultrascape Vertical Stone and Brick Slip Adhesive 20kg Bag' },
   { name: 'Cempoint',            category: 'Construction Materials' },
   { name: 'Instaband Eco',       category: 'Construction Materials' },
   { name: 'Instaline White',     category: 'Construction Materials' },
@@ -1292,12 +1294,20 @@ function stockStatus(level) {
 // Uses progressively looser matching so slight name differences still resolve.
 function matchStockToProducts(crmProducts) {
   return STOCK_PRODUCTS.map(known => {
-    const kl = known.name.toLowerCase();
-    let match =
-      crmProducts.find(p => p.name.toLowerCase() === kl) ||
-      crmProducts.find(p => p.name.toLowerCase().startsWith(kl)) ||
-      crmProducts.find(p => p.name.toLowerCase().includes(kl)) ||
-      crmProducts.find(p => kl.includes(p.name.toLowerCase()) && p.name.length > 3);
+    let match;
+    if (known.prospectName) {
+      // Exact match against confirmed Prospect Description value
+      const pn = known.prospectName.toLowerCase();
+      match = crmProducts.find(p => p.name.toLowerCase() === pn);
+    } else {
+      // Fuzzy fallback for products not yet mapped to a Prospect name
+      const kl = known.name.toLowerCase();
+      match =
+        crmProducts.find(p => p.name.toLowerCase() === kl) ||
+        crmProducts.find(p => p.name.toLowerCase().startsWith(kl)) ||
+        crmProducts.find(p => p.name.toLowerCase().includes(kl)) ||
+        crmProducts.find(p => kl.includes(p.name.toLowerCase()) && p.name.length > 3);
+    }
     return {
       name:     known.name,
       category: known.category,
