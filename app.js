@@ -79,26 +79,78 @@ const SAFETY_PRODUCTS = ['Polymer Barrier', 'Steel Barrier', 'Bollard', 'Rack Gu
 
 // Products shown on the New Order form — the only ones we track on the Stock page
 const STOCK_PRODUCTS = [
-  // Construction Materials — prospectSku = ProductItemId in Prospect CRM
+  // prospectSku = ProductItemId in Prospect CRM
+
+  // — IRR / Instant Road Repair
   { name: 'IRR 6mm',             category: 'Construction Materials', prospectSku: 'EIRR-TUB-6MM' },
+  { name: 'IRR 6mm Bags',        category: 'Construction Materials', prospectSku: 'EIRR-BAGS-6MM' },
+  { name: 'IRR 6mm Red',         category: 'Construction Materials', prospectSku: 'EIRR-TUB-RED' },
   { name: 'IRR 10mm',            category: 'Construction Materials', prospectSku: 'EIRR-TUB' },
+  { name: 'IRR 10mm Bags',       category: 'Construction Materials', prospectSku: 'EIRR-BAGS-10MM' },
+
+  // — M-series Mortars
+  { name: 'M45',                 category: 'Construction Materials', prospectSku: 'EM45-TUB' },
+  { name: 'M60',                 category: 'Construction Materials', prospectSku: 'EM60' },
   { name: 'M60F',                category: 'Construction Materials', prospectSku: 'EM60F' },
+  { name: 'M60F Tubs',           category: 'Construction Materials', prospectSku: 'EM60F-TUBS' },
+  { name: 'M90',                 category: 'Construction Materials', prospectSku: 'EM90' },
+
+  // — Tough Patch
   { name: 'Tough Patch Tubs',    category: 'Construction Materials', prospectSku: 'ETOUGHPATCH' },
   { name: 'Tough Patch Bags',    category: 'Construction Materials', prospectSku: 'ETOUGHPATCH-BAGS' },
+  { name: 'Tough Patch 10mm',    category: 'Construction Materials', prospectSku: 'ETOUGHPATCH-10MM' },
+
+  // — Concrete / Repair
   { name: 'QC10F',               category: 'Construction Materials', prospectSku: 'EQC10F' },
-  { name: 'M90',                 category: 'Construction Materials', prospectSku: 'EM90' },
-  { name: 'FP Smooth Grey',      category: 'Construction Materials', prospectSku: 'EFP-SMOOTH' },
+  { name: 'QC6',                 category: 'Construction Materials', prospectSku: 'EQC6' },
+  { name: 'Cemflow-HF',          category: 'Construction Materials', prospectSku: 'ECEM-HF' },
+  { name: 'Fast Set Concrete',   category: 'Construction Materials', prospectSku: 'EFTC' },
+  { name: 'Post Fix',            category: 'Construction Materials', prospectSku: 'EPF' },
+  { name: 'Superfix',            category: 'Construction Materials', prospectSku: 'ESUPERFIX' },
+
+  // — Flowpoint Grouts
   { name: 'FP Grey',             category: 'Construction Materials', prospectSku: 'EFP' },
-  { name: 'FP Smooth Limestone', category: 'Construction Materials', prospectSku: 'EFP-LIMESTONE-SMOOTH' },
-  { name: 'FP Smooth Charcoal',  category: 'Construction Materials', prospectSku: 'EFP-CHAR-SMOOTH' },
+  { name: 'FP Smooth Grey',      category: 'Construction Materials', prospectSku: 'EFP-SMOOTH' },
   { name: 'FP Charcoal',         category: 'Construction Materials', prospectSku: 'EFP-CHAR' },
+  { name: 'FP Smooth Charcoal',  category: 'Construction Materials', prospectSku: 'EFP-CHAR-SMOOTH' },
+  { name: 'FP Smooth Limestone', category: 'Construction Materials', prospectSku: 'EFP-LIMESTONE-SMOOTH' },
+  { name: 'FP ECO Natural',      category: 'Construction Materials', prospectSku: 'EFP-ECO' },
+  { name: 'FP ECO Charcoal',     category: 'Construction Materials', prospectSku: 'EFP-ECO-CHAR' },
+  { name: 'FP Fine Natural',     category: 'Construction Materials', prospectSku: 'EFP-FINE-NATURAL' },
+  { name: 'FP Fine Charcoal',    category: 'Construction Materials', prospectSku: 'EFP-FINE-CHAR' },
+  { name: 'Stone Grey Natural',  category: 'Construction Materials', prospectSku: 'EFP-SG-NAT' },
+  { name: 'Stone Grey Smooth',   category: 'Construction Materials', prospectSku: 'EFP-SG-SMOOTH' },
+
+  // — Envirobed
+  { name: 'Envirobed Std',       category: 'Construction Materials', prospectSku: 'EENVB' },
+  { name: 'Envirobed Flowable',  category: 'Construction Materials', prospectSku: 'EENVBF' },
+  { name: 'Envirobed Red Std',   category: 'Construction Materials', prospectSku: 'EENVB-RED-STD' },
+  { name: 'Envirobed Red Flow',  category: 'Construction Materials', prospectSku: 'EENVB-RED-FLOWABLE' },
+  { name: 'Envirobed Tubs',      category: 'Construction Materials', prospectSku: 'EENVB-TUBS' },
+
+  // — Pro-Bed / Bedding
+  { name: 'Pro-Bed HS',          category: 'Construction Materials', prospectSku: 'EPB-HS-25' },
+  { name: 'Pro-Bed HS ECO',      category: 'Construction Materials', prospectSku: 'EPB-HS-25-ECO' },
+
+  // — Primers / Adhesives
   { name: 'ProPrime',            category: 'Construction Materials', prospectSku: 'EPP-20' },
   { name: 'Slipbond',            category: 'Construction Materials', prospectSku: 'ESLIPBOND' },
+
+  // — Pointing / Jointing
   { name: 'Cempoint',            category: 'Construction Materials', prospectSku: 'ECEMPOINT-NAT' },
+  { name: 'Pave Joint Natural',  category: 'Construction Materials', prospectSku: 'EPJ-NAT' },
+
+  // — Sealers / Liquids
+  { name: 'FlowFix 8kg',         category: 'Construction Materials', prospectSku: 'EFF' },
+  { name: 'Jointfix 25L',        category: 'Construction Materials', prospectSku: 'EJF-25' },
+  { name: 'SCJ',                 category: 'Construction Materials', prospectSku: 'ESCJ' },
+
+  // — Tapes / Lines / Accessories
   { name: 'Instaband Eco',       category: 'Construction Materials', prospectSku: 'EINSTABAND-ECO' },
   { name: 'Instaline White',     category: 'Construction Materials', prospectSku: 'EINSTALINE-W' },
   { name: 'Instaline Yellow',    category: 'Construction Materials', prospectSku: 'EINSTALINE-Y' },
-  { name: 'SCJ',                 category: 'Construction Materials', prospectSku: 'ESCJ' },
+  { name: 'Creter Bag',          category: 'Construction Materials', prospectSku: 'ECRETER' },
+
   // Safety Barriers
   { name: 'Polymer Barrier',     category: 'Safety Barriers' },
   { name: 'Steel Barrier',       category: 'Safety Barriers' },
