@@ -5,17 +5,10 @@
 
 const BASE = 'https://crm-odata-v1.prospect365.com';
 
-// Entity names to try in order — Prospect365 accounts vary
 const CANDIDATE_ENTITIES = [
-  'Products',
-  'StockItems',
-  'Product',
-  'CatalogueItems',
-  'ProductCatalogueItems',
-  'Items',
-  'Inventory',
-  'InventoryItems',
-  'StockLevels',
+  'Products', 'StockItems', 'Product', 'CatalogueItems',
+  'ProductCatalogueItems', 'Items', 'Inventory', 'InventoryItems',
+  'StockLevels', 'ProductGroups', 'SalesItems', 'Parts',
 ];
 
 exports.handler = async function (event) {
@@ -32,87 +25,84 @@ exports.handler = async function (event) {
     };
   }
 
-  const headers = {
-    Authorization: `Bearer ${token}`,
-    Accept:        'application/json',
-  };
+  const headers = { Authorization: `Bearer ${token}`, Accept: 'application/json' };
 
   try {
-    // ── Step 1: discover which entity set exists ──────────────────────────
-    let entity = null;
+    // ── Step 1: read OData service root to discover entity names ─────────
+    let availableEntities = [];
+    try {
+      const rootRes = await timedFetch(`${BASE}/`, headers, 8000);
+      if (rootRes.ok) {
+        const rootJson = await rootRes.json();
+        availableEntities = (rootJson.value || [])
+          .map(e => e.name || e.Name || e.url || e.URL)
+          .filter(Boolean);
+      }
+    } catch (_) {}
 
-    for (const candidate of CANDIDATE_ENTITIES) {
-      const probe = await timedFetch(`${BASE}/${candidate}?$top=1`, headers, 8000);
-      if (probe.ok) { entity = candidate; break; }
+    // ── Step 2: if root gave us names, try those first; else try candidates
+    const toTry = availableEntities.length
+      ? [...availableEntities, ...CANDIDATE_ENTITIES.filter(c => !availableEntities.includes(c))]
+      : CANDIDATE_ENTITIES;
+
+    let entity = null;
+    for (const candidate of toTry) {
+      try {
+        const probe = await timedFetch(`${BASE}/${candidate}?$top=1`, headers, 6000);
+        if (probe.ok) { entity = candidate; break; }
+      } catch (_) {}
     }
 
-    // ── Step 2: if nothing matched, fetch the OData root to help debug ────
+    // ── Step 3: nothing matched — return the entity list so we can debug ─
     if (!entity) {
-      let rootInfo = null;
-      try {
-        const rootRes = await timedFetch(`${BASE}/`, headers, 8000);
-        if (rootRes.ok) rootInfo = await rootRes.json();
-      } catch (_) {}
-
       return {
         statusCode: 404,
         headers: cors(),
         body: JSON.stringify({
           error: 'Could not find a product entity in Prospect CRM',
+          availableEntities,          // shown on-screen in the portal
           tried: CANDIDATE_ENTITIES,
-          // Return whatever the OData root lists so we can find the right name
-          availableEntities: rootInfo
-            ? (rootInfo.value || []).map(e => e.name || e.Name || e.url || e.URL)
-            : null,
         }),
       };
     }
 
-    // ── Step 3: fetch all records (follow OData pagination) ───────────────
+    // ── Step 4: fetch all records with OData pagination ───────────────────
     let allProducts = [];
     let url = `${BASE}/${entity}?$top=1000&$orderby=Description`;
 
     for (let page = 0; page < 10 && url; page++) {
       const res = await timedFetch(url, headers, 15000);
-
       if (!res.ok) {
         const detail = await res.text().catch(() => '');
         return {
           statusCode: res.status,
           headers: cors(),
           body: JSON.stringify({
-            error:  `Prospect CRM returned HTTP ${res.status}`,
-            entity,
-            detail: detail.slice(0, 500),
+            error: `Prospect CRM returned HTTP ${res.status}`,
+            entity, detail: detail.slice(0, 500),
           }),
         };
       }
-
       const json  = await res.json();
       const items = Array.isArray(json.value) ? json.value
-                  : Array.isArray(json)       ? json
-                  : [];
+                  : Array.isArray(json)       ? json : [];
       allProducts = allProducts.concat(items);
       url = json['@odata.nextLink'] || null;
     }
 
-    // ── Step 4: normalise field names ─────────────────────────────────────
+    // ── Step 5: normalise field names ─────────────────────────────────────
     const products = allProducts.map(p => ({
-      name: p.Description      || p.Name          || p.ProductName  ||
-            p.description      || p.name          || p.productName  || '',
-
+      name: p.Description   || p.Name          || p.ProductName    ||
+            p.description   || p.name          || p.productName    || '',
       stock: pick(p, [
-        'FreeStock', 'StockLevel', 'QuantityOnHand', 'FreeStockLevel',
-        'Stock',     'Quantity',   'freeStock',       'stockLevel',
-        'quantityOnHand', 'CurrentStock', 'AvailableStock',
+        'FreeStock','StockLevel','QuantityOnHand','FreeStockLevel',
+        'Stock','Quantity','freeStock','stockLevel','quantityOnHand',
+        'CurrentStock','AvailableStock',
       ]),
-
-      category: p.GroupDescription    || p.CategoryDescription || p.ProductGroup  ||
-                p.Group               || p.Category            || p.groupDescription ||
-                p.categoryDescription || p.productGroup        || p.group         || '',
-
-      sku: p.Reference || p.SKU    || p.Code       || p.ProductCode ||
-           p.reference || p.sku    || p.code       || p.productCode || '',
+      category: p.GroupDescription || p.CategoryDescription || p.ProductGroup ||
+                p.Group  || p.Category || p.groupDescription || p.category    || '',
+      sku: p.Reference || p.SKU  || p.Code || p.ProductCode ||
+           p.reference || p.sku  || p.code || p.productCode  || '',
     }));
 
     const filtered = products.filter(p => p.name.trim() !== '');
@@ -122,9 +112,9 @@ exports.handler = async function (event) {
       headers: { ...cors(), 'Cache-Control': 'no-cache, no-store' },
       body: JSON.stringify({
         products: filtered,
-        total:    filtered.length,
-        entity,                                              // which entity we used
-        _fields:  allProducts.length > 0 ? Object.keys(allProducts[0]) : [],
+        total: filtered.length,
+        entity,
+        _fields: allProducts.length > 0 ? Object.keys(allProducts[0]) : [],
       }),
     };
 
@@ -137,7 +127,6 @@ exports.handler = async function (event) {
   }
 };
 
-// fetch with AbortController timeout
 async function timedFetch(url, headers, ms) {
   const ctrl  = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), ms);
@@ -149,15 +138,10 @@ async function timedFetch(url, headers, ms) {
 }
 
 function pick(obj, keys) {
-  for (const k of keys) {
-    if (obj[k] != null) return obj[k];
-  }
+  for (const k of keys) { if (obj[k] != null) return obj[k]; }
   return null;
 }
 
 function cors() {
-  return {
-    'Content-Type':                'application/json',
-    'Access-Control-Allow-Origin': '*',
-  };
+  return { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
 }

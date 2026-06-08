@@ -1327,7 +1327,13 @@ async function fetchStock() {
 
     if (!res.ok || json.error) {
       const msg = json.error || ('HTTP ' + res.status);
-      if (dash) dash.innerHTML = `<div class="stock-empty-state stock-error">Could not load stock: ${msg}</div>`;
+      let extra = '';
+      if (json.availableEntities && json.availableEntities.length) {
+        extra = `<div class="stock-entity-list"><strong>Available entities in your Prospect account:</strong><br>${json.availableEntities.join('<br>')}</div>`;
+      } else if (json.availableEntities && json.availableEntities.length === 0) {
+        extra = `<div class="stock-entity-list">No entities returned from the Prospect API root — the token may not have OData access.</div>`;
+      }
+      if (dash) dash.innerHTML = `<div class="stock-empty-state stock-error">${msg}${extra}</div>`;
       showToast('Stock load failed — ' + msg, 'error');
       return;
     }
