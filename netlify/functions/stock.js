@@ -68,7 +68,7 @@ exports.handler = async function (event) {
 
     // ── Step 4: fetch all records with OData pagination ───────────────────
     let allProducts = [];
-    let url = `${BASE}/${entity}?$top=1000&$orderby=Description`;
+    let url = `${BASE}/${entity}?$top=1000`;
 
     for (let page = 0; page < 10 && url; page++) {
       const res = await timedFetch(url, headers, 15000);
