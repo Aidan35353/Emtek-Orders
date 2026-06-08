@@ -79,29 +79,28 @@ const SAFETY_PRODUCTS = ['Polymer Barrier', 'Steel Barrier', 'Bollard', 'Rack Gu
 
 // Products shown on the New Order form — the only ones we track on the Stock page
 const STOCK_PRODUCTS = [
-  // Construction Materials
-  // prospectName = exact Description field value in Prospect CRM
-  { name: 'IRR 6mm',             category: 'Construction Materials', prospectName: 'Ultracrete IRR Instant Road Repair 25kg Tubs 6mm' },
-  { name: 'IRR 10mm',            category: 'Construction Materials', prospectName: 'Ultracrete Instant Road Repair 25kg Tub 10mm' },
-  { name: 'M60F',                category: 'Construction Materials' },
-  { name: 'Tough Patch Tubs',    category: 'Construction Materials', prospectName: 'Ultracrete ToughPatch Tubs - 25kg Tubs' },
-  { name: 'Tough Patch Bags',    category: 'Construction Materials', prospectName: 'Ultracrete ToughPatch Bags - 25kg' },
-  { name: 'QC10F',               category: 'Construction Materials' },
-  { name: 'M90',                 category: 'Construction Materials' },
-  { name: 'FP Smooth Grey',      category: 'Construction Materials', prospectName: 'Ultrascape Flowpoint Rapid Set Grout Smooth' },
-  { name: 'FP Grey',             category: 'Construction Materials', prospectName: 'Ultrascape Flowpoint Rapid Set Grout-NATURAL-25kg Bag' },
-  { name: 'FP Smooth Limestone', category: 'Construction Materials', prospectName: 'Ultrascape Flowpoint Limestone Smooth' },
-  { name: 'FP Smooth Charcoal',  category: 'Construction Materials', prospectName: 'Ultrascape Flowpoint Charcoal Smooth Rapid Set G - 25kg Bags' },
-  { name: 'FP Limestone',        category: 'Construction Materials' },
-  { name: 'FP Charcoal',         category: 'Construction Materials', prospectName: 'Ultrascape Flowpoint Rapid Set Grout-CHARCOAL-25kg bag' },
-  { name: 'FP Premium',          category: 'Construction Materials' },
-  { name: 'ProPrime',            category: 'Construction Materials', prospectName: 'Ultrascape Pro-Prime Slurry Primer - 20Kg' },
-  { name: 'Slipbond',            category: 'Construction Materials', prospectName: 'Ultrascape Vertical Stone and Brick Slip Adhesive 20kg Bag' },
-  { name: 'Cempoint',            category: 'Construction Materials' },
-  { name: 'Instaband Eco',       category: 'Construction Materials' },
-  { name: 'Instaline White',     category: 'Construction Materials' },
-  { name: 'Instaline Yellow',    category: 'Construction Materials' },
-  { name: 'SCJ',                 category: 'Construction Materials' },
+  // Construction Materials — prospectSku = ProductItemId in Prospect CRM
+  { name: 'IRR 6mm',             category: 'Construction Materials', prospectSku: 'EIRR-TUB-6MM' },
+  { name: 'IRR 10mm',            category: 'Construction Materials', prospectSku: 'EIRR-TUB' },
+  { name: 'M60F',                category: 'Construction Materials', prospectSku: 'EM60F' },
+  { name: 'Tough Patch Tubs',    category: 'Construction Materials', prospectSku: 'ETOUGHPATCH' },
+  { name: 'Tough Patch Bags',    category: 'Construction Materials', prospectSku: 'ETOUGHPATCH-BAGS' },
+  { name: 'QC10F',               category: 'Construction Materials', prospectSku: 'EQC10F' },
+  { name: 'M90',                 category: 'Construction Materials', prospectSku: 'EM90' },
+  { name: 'FP Smooth Grey',      category: 'Construction Materials', prospectSku: 'EFP-SMOOTH' },
+  { name: 'FP Grey',             category: 'Construction Materials', prospectSku: 'EFP' },
+  { name: 'FP Smooth Limestone', category: 'Construction Materials', prospectSku: 'EFP-LIMESTONE-SMOOTH' },
+  { name: 'FP Smooth Charcoal',  category: 'Construction Materials', prospectSku: 'EFP-CHAR-SMOOTH' },
+  { name: 'FP Limestone',        category: 'Construction Materials' }, // no Prospect SKU found — check if still stocked
+  { name: 'FP Charcoal',         category: 'Construction Materials', prospectSku: 'EFP-CHAR' },
+  { name: 'FP Premium',          category: 'Construction Materials' }, // no Prospect SKU found — check if still stocked
+  { name: 'ProPrime',            category: 'Construction Materials', prospectSku: 'EPP-20' },
+  { name: 'Slipbond',            category: 'Construction Materials', prospectSku: 'ESLIPBOND' },
+  { name: 'Cempoint',            category: 'Construction Materials', prospectSku: 'ECEMPOINT-NAT' },
+  { name: 'Instaband Eco',       category: 'Construction Materials', prospectSku: 'EINSTABAND-ECO' },
+  { name: 'Instaline White',     category: 'Construction Materials' }, // no Prospect SKU found — check if still stocked
+  { name: 'Instaline Yellow',    category: 'Construction Materials' }, // no Prospect SKU found — check if still stocked
+  { name: 'SCJ',                 category: 'Construction Materials', prospectSku: 'ESCJ' },
   // Safety Barriers
   { name: 'Polymer Barrier',     category: 'Safety Barriers' },
   { name: 'Steel Barrier',       category: 'Safety Barriers' },
@@ -1295,12 +1294,11 @@ function stockStatus(level) {
 function matchStockToProducts(crmProducts) {
   return STOCK_PRODUCTS.map(known => {
     let match;
-    if (known.prospectName) {
-      // Exact match against confirmed Prospect Description value
-      const pn = known.prospectName.toLowerCase();
-      match = crmProducts.find(p => p.name.toLowerCase() === pn);
+    if (known.prospectSku) {
+      // SKU match — definitive, no ambiguity
+      match = crmProducts.find(p => p.sku === known.prospectSku);
     } else {
-      // Fuzzy fallback for products not yet mapped to a Prospect name
+      // Fuzzy name fallback for products without a confirmed SKU
       const kl = known.name.toLowerCase();
       match =
         crmProducts.find(p => p.name.toLowerCase() === kl) ||
