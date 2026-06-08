@@ -5,13 +5,12 @@
 
 const BASE = 'https://crm-odata-v1.prospect365.com';
 
+// Specific stock/product entities to try — in priority order
 const CANDIDATE_ENTITIES = [
-  'Inventories',       // Prospect365 standard product/stock entity
+  'Inventories',       // Prospect365 standard inventory entity
   'ProductItems',      // alternate product entity
   'StockByWarehouses', // stock-level view
   'StockByBins',
-  'Products',
-  'StockItems',
 ];
 
 exports.handler = async function (event) {
@@ -31,45 +30,32 @@ exports.handler = async function (event) {
   const headers = { Authorization: `Bearer ${token}`, Accept: 'application/json' };
 
   try {
-    // ── Step 1: read OData service root to discover entity names ─────────
-    let availableEntities = [];
-    try {
-      const rootRes = await timedFetch(`${BASE}/`, headers, 8000);
-      if (rootRes.ok) {
-        const rootJson = await rootRes.json();
-        availableEntities = (rootJson.value || [])
-          .map(e => e.name || e.Name || e.url || e.URL)
-          .filter(Boolean);
-      }
-    } catch (_) {}
-
-    // ── Step 2: if root gave us names, try those first; else try candidates
-    const toTry = availableEntities.length
-      ? [...availableEntities, ...CANDIDATE_ENTITIES.filter(c => !availableEntities.includes(c))]
-      : CANDIDATE_ENTITIES;
-
+    // ── Find the right entity — try candidates in order ───────────────────
     let entity = null;
-    for (const candidate of toTry) {
+    const probeResults = {};
+
+    for (const candidate of CANDIDATE_ENTITIES) {
       try {
-        const probe = await timedFetch(`${BASE}/${candidate}?$top=1`, headers, 6000);
+        const probe = await timedFetch(`${BASE}/${candidate}?$top=1`, headers, 8000);
+        probeResults[candidate] = probe.status;
         if (probe.ok) { entity = candidate; break; }
-      } catch (_) {}
+      } catch (e) {
+        probeResults[candidate] = 'timeout/error';
+      }
     }
 
-    // ── Step 3: nothing matched — return the entity list so we can debug ─
     if (!entity) {
       return {
         statusCode: 404,
         headers: cors(),
         body: JSON.stringify({
-          error: 'Could not find a product entity in Prospect CRM',
-          availableEntities,          // shown on-screen in the portal
-          tried: CANDIDATE_ENTITIES,
+          error: 'Could not find a stock entity in Prospect CRM',
+          probeResults,
         }),
       };
     }
 
-    // ── Step 4: fetch all records with OData pagination ───────────────────
+    // ── Fetch all records with OData pagination ───────────────────────────
     let allProducts = [];
     let url = `${BASE}/${entity}?$top=1000`;
 
@@ -93,24 +79,26 @@ exports.handler = async function (event) {
       url = json['@odata.nextLink'] || null;
     }
 
-    // ── Step 5: normalise field names ─────────────────────────────────────
+    // ── Normalise field names ─────────────────────────────────────────────
+    // Prospect365 Inventories uses StockDescription / StockCode / FreeStock
     const products = allProducts.map(p => ({
-      // Prospect365 Inventories entity uses StockDescription / StockCode
-      name: p.StockDescription || p.Description || p.Name       ||
-            p.ProductName      || p.ItemDescription || p.description ||
-            p.name             || p.productName  || '',
+      name: p.StockDescription || p.Description    || p.Name         ||
+            p.ProductName      || p.ItemDescription || p.description  ||
+            p.name             || p.productName     || '',
+
       stock: pick(p, [
         'FreeStock','QuantityInStock','StockQuantity','QtyOnHand',
         'StockLevel','QuantityOnHand','FreeStockLevel','AvailableQty',
         'Stock','Quantity','CurrentStock','AvailableStock',
-        'freeStock','stockLevel','quantityOnHand',
       ]),
-      category: p.GroupDescription  || p.StockGroup   || p.ProductGroup  ||
-                p.CategoryDescription || p.Group      || p.Category      ||
-                p.groupDescription  || p.category     || '',
-      sku: p.StockCode  || p.Reference || p.ItemCode  || p.SKU   ||
-           p.Code       || p.ProductCode || p.reference || p.sku  ||
-           p.code       || p.productCode || '',
+
+      category: p.GroupDescription   || p.StockGroup      || p.ProductGroup     ||
+                p.CategoryDescription || p.Group          || p.Category         ||
+                p.groupDescription   || p.category        || '',
+
+      sku: p.StockCode   || p.Reference   || p.ItemCode    || p.SKU   ||
+           p.Code        || p.ProductCode || p.reference   || p.sku   ||
+           p.code        || p.productCode || '',
     }));
 
     const filtered = products.filter(p => p.name.trim() !== '');
@@ -120,10 +108,9 @@ exports.handler = async function (event) {
       headers: { ...cors(), 'Cache-Control': 'no-cache, no-store' },
       body: JSON.stringify({
         products: filtered,
-        total: filtered.length,
+        total:    filtered.length,
         entity,
         _fields:  allProducts.length > 0 ? Object.keys(allProducts[0]) : [],
-        // First 3 raw records so we can identify the correct field names
         _sample:  allProducts.slice(0, 3),
       }),
     };
