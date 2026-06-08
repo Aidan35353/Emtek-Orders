@@ -1345,6 +1345,18 @@ async function fetchStock() {
     if (updEl) updEl.textContent = 'Updated ' + stockLastFetched.toLocaleTimeString('en-IE', { hour: '2-digit', minute: '2-digit' });
 
     renderStock();
+
+    // ── Temporary debug panel — shows raw Prospect names if nothing matched
+    const matched = matchStockToProducts(stockData).filter(p => p.matched).length;
+    const dash    = document.getElementById('stock-dashboard');
+    if (matched === 0 && stockData.length > 0 && dash) {
+      const names = stockData.slice(0, 50).map(p => p.name).filter(Boolean);
+      const debugHtml = `<div class="stock-debug-panel">
+        <strong>Debug — first ${names.length} product names returned by Prospect CRM (entity: ${json.entity || '?'}):</strong>
+        <div class="stock-debug-names">${names.map(n => `<span>${n}</span>`).join('')}</div>
+      </div>`;
+      dash.insertAdjacentHTML('beforeend', debugHtml);
+    }
   } catch (err) {
     if (dash) dash.innerHTML = `<div class="stock-empty-state stock-error">Connection error: ${err.message}</div>`;
     showToast('Stock connection error', 'error');

@@ -1581,6 +1581,30 @@ body { font-family: var(--font); background: var(--gray); color: var(--dark); mi
 .stock-loading { color: var(--blue); }
 .stock-error   { color: var(--red); }
 
+.stock-debug-panel {
+  margin-top: 24px;
+  padding: 16px 20px;
+  background: var(--gray);
+  border-radius: var(--radius);
+  border-left: 3px solid var(--yellow-dk);
+  font-size: 0.82rem;
+  color: var(--dark);
+}
+.stock-debug-names {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.stock-debug-names span {
+  background: var(--white);
+  border: 1px solid var(--gray-mid);
+  border-radius: 3px;
+  padding: 3px 8px;
+  font-size: 0.78rem;
+  color: var(--dark);
+}
+
 .stock-entity-list {
   margin-top: 16px;
   padding: 14px 18px;
