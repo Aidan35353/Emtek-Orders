@@ -95,7 +95,7 @@ const STOCK_PRODUCTS = [
   { name: 'FP Limestone',        category: 'Construction Materials' },
   { name: 'FP Charcoal',         category: 'Construction Materials', prospectName: 'Ultrascape Flowpoint Rapid Set Grout-CHARCOAL-25kg bag' },
   { name: 'FP Premium',          category: 'Construction Materials' },
-  { name: 'ProPrime',            category: 'Construction Materials' },
+  { name: 'ProPrime',            category: 'Construction Materials', prospectName: 'Ultrascape Pro-Prime Slurry Primer - 20Kg' },
   { name: 'Slipbond',            category: 'Construction Materials', prospectName: 'Ultrascape Vertical Stone and Brick Slip Adhesive 20kg Bag' },
   { name: 'Cempoint',            category: 'Construction Materials' },
   { name: 'Instaband Eco',       category: 'Construction Materials' },
