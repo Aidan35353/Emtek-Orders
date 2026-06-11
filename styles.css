@@ -66,6 +66,7 @@ body { font-family: var(--font); background: var(--gray); color: var(--dark); mi
 }
 .nav-btn:hover { color: var(--blue); background: rgba(0,131,201,0.07); }
 .nav-btn.active { color: var(--blue); border-bottom: 3px solid var(--blue); border-radius: 0; }
+.analytics-nav-link { text-decoration: none; display: inline-flex; align-items: center; }
 
 .nav-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 .order-count-badge {

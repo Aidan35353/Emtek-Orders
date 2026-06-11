@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EMTEK — Sales Analytics</title>
+  <link rel="stylesheet" href="analytics-styles.css" />
+</head>
+<body>
+
+  <!-- LOADING OVERLAY -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-box">
+      <div class="loading-logo">EMTEK<span class="logo-arrow">«</span></div>
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Loading sales data…</div>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left">
+      <a href="/" class="header-back-btn">← Portal</a>
+      <div class="header-logo">EMTEK<span class="logo-arrow">«</span></div>
+      <div class="header-title">SALES ANALYTICS</div>
+    </div>
+    <div class="header-right">
+      <div class="header-meta">
+        <span id="reportDate"></span>
+        <span class="header-tag">YTD to 10/06/2026</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- TAB NAVIGATION -->
+  <nav class="tab-nav">
+    <button class="tab-btn active" data-tab="executive">📊 Executive Dashboard</button>
+    <button class="tab-btn" data-tab="accounts">📋 All Accounts</button>
+    <button class="tab-btn" data-tab="plans">🎯 Account Plans</button>
+    <button class="tab-btn" data-tab="trends">📈 Monthly Trends</button>
+    <button class="tab-btn" data-tab="atrisk">⚠ At Risk</button>
+  </nav>
+
+  <main class="main">
+
+    <!-- ═══════════════════ EXECUTIVE DASHBOARD ════════════════ -->
+    <section id="tab-executive" class="tab-section active">
+
+      <div class="section-header">
+        <h2>Executive Dashboard</h2>
+        <p>2026 YTD performance (1 Jan – 10 Jun 2026) vs same period 2025 · All comparisons like-for-like</p>
+      </div>
+
+      <div class="kpi-row" id="execKpiRow"></div>
+
+      <div class="grid-2">
+        <div class="card card-wide">
+          <div class="card-header">
+            <h3>Monthly Revenue — 2026 vs 2025</h3>
+            <span class="card-sub">Jan – Jun (June partial, capped same date both years)</span>
+          </div>
+          <div class="chart-container chart-lg">
+            <canvas id="monthlyRevenueChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <h3>Revenue by Segment</h3>
+            <span class="card-sub">2026 vs 2025 YTD</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="segmentChart"></canvas>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3>Segment Breakdown</h3>
+            <span class="card-sub">Accounts &amp; revenue by tier</span>
+          </div>
+          <table class="data-table" id="segmentTable">
+            <thead>
+              <tr><th>Segment</th><th>Accounts</th><th>2026 Revenue</th><th>Avg Revenue</th><th>% of Total</th><th>2025 Revenue</th><th>YoY</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <div class="note-box" style="margin-top:14px;">
+            All comparisons are like-for-like: 1 Jan – 10 Jun in both years. June is partial in both years.
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ═══════════════════ ALL ACCOUNTS ═══════════════════════ -->
+    <section id="tab-accounts" class="tab-section">
+
+      <div class="section-header">
+        <h2>All Accounts</h2>
+        <p>266 accounts · 2026 YTD (to 10/06/2026) vs 2025 same period</p>
+      </div>
+
+      <div class="kpi-row" id="accountKpiRow"></div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>All Accounts — Ranked by 2026 Revenue</h3>
+          <div class="filter-group">
+            <button class="filter-btn active" data-filter="all">All (266)</button>
+            <button class="filter-btn" data-filter="active">🟢 Active</button>
+            <button class="filter-btn" data-filter="watch">🟡 Watch</button>
+            <button class="filter-btn" data-filter="atrisk">🔴 At Risk</button>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table sortable" id="accountsTable">
+            <thead>
+              <tr>
+                <th data-col="rank">#</th>
+                <th data-col="name">Account</th>
+                <th data-col="segment">Segment</th>
+                <th data-col="orders" class="num">Orders</th>
+                <th data-col="revenue_2026" class="num">2026 Revenue</th>
+                <th data-col="avg_order" class="num">Avg Order</th>
+                <th data-col="revenue_2025" class="num">2025 Revenue</th>
+                <th data-col="yoy_pct" class="num">YoY %</th>
+                <th data-col="days_since" class="num">Days Since Last</th>
+                <th data-col="status">Status</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ═══════════════════ ACCOUNT PLANS ══════════════════════ -->
+    <section id="tab-plans" class="tab-section">
+
+      <div class="section-header">
+        <h2>Key Account Plans</h2>
+        <p>Top 15 accounts · Monthly revenue breakdown · Action recommendations</p>
+      </div>
+
+      <div id="plansGrid" class="plans-grid"></div>
+
+    </section>
+
+    <!-- ═══════════════════ MONTHLY TRENDS ═════════════════════ -->
+    <section id="tab-trends" class="tab-section">
+
+      <div class="section-header">
+        <h2>Monthly Trends</h2>
+        <p>Top 20 accounts · Jan – Jun 2026 monthly breakdown vs 2025</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Total Monthly Revenue — 2026 vs 2025</h3>
+          <span class="card-sub">All accounts combined</span>
+        </div>
+        <div class="chart-container">
+          <canvas id="trendsOverviewChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Top 20 Accounts — Monthly Breakdown</h3>
+          <span class="card-sub">Revenue values in £ · Colour intensity proportional to monthly value</span>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table trends-table" id="trendsTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Account</th>
+                <th class="num">Jan</th>
+                <th class="num">Feb</th>
+                <th class="num">Mar</th>
+                <th class="num">Apr</th>
+                <th class="num">May</th>
+                <th class="num">Jun</th>
+                <th class="num">2026 Total</th>
+                <th class="num">2025 Total</th>
+                <th class="num">YoY</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ═══════════════════ AT RISK ACCOUNTS ═══════════════════ -->
+    <section id="tab-atrisk" class="tab-section">
+
+      <div class="section-header">
+        <h2>At Risk Accounts</h2>
+        <p>Accounts with no orders in 30+ days that have spent £3,000+ in 2026 YTD — requires immediate action</p>
+      </div>
+
+      <div class="kpi-row" id="riskKpiRow"></div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>At Risk Accounts — Sorted by Days Inactive</h3>
+          <span class="card-sub">🔴 Critical = 90+ days · 🟠 High = 60–89 days · 🟡 Medium = 30–59 days</span>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table" id="riskTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Account</th>
+                <th class="num">2026 Revenue</th>
+                <th class="num">Orders</th>
+                <th class="num">Days Inactive</th>
+                <th>Segment</th>
+                <th>Recommended Action</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script src="config.js"></script>
+  <script>
+    // Auth guard — redirect to login portal if no active session
+    (async () => {
+      try {
+        const { createClient } = supabase;
+        const db = createClient(SUPABASE_URL, SUPABASE_ANON);
+        const { data: { session } } = await db.auth.getSession();
+        if (!session) { window.location.href = '/'; }
+      } catch (e) {
+        window.location.href = '/';
+      }
+    })();
+  </script>
+  <script src="analytics-data.js"></script>
+  <script src="analytics-app.js"></script>
+
+</body>
+</html>
