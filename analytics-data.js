@@ -235,7 +235,7 @@ const COUNTY_MAP = {
   'Patrick Keenan Quarries':                                      'Antrim',
   'Paul Fitzgerald Stone':                                        'Kerry',
   'Pavers Cave':                                                  'Down',
-  'Pfizer':                                                       'Cork',
+  'Pfizer':                                                       'Dublin',
   'Pilgrims Broughshane':                                         'Antrim',
   'Pilgrims Donaghmore':                                          'Tyrone',
   'Pilgrims Europe (Craigavon)':                                  'Armagh',
