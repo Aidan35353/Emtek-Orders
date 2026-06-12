@@ -579,6 +579,9 @@ function init() {
   renderRiskKpis();
   renderRiskTable();
 
+  // Geography
+  renderGeography();
+
   // Tabs
   initTabs();
 
@@ -586,3 +589,191 @@ function init() {
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+// ═══════════════════ GEOGRAPHY ════════════════════════════════════════════════
+
+function buildCountyTotals() {
+  const totals = {};
+  // Initialise all counties
+  COUNTY_GRID.forEach(c => {
+    totals[c.name] = { rev: 0, accounts: 0, accountList: [] };
+  });
+
+  ACCOUNTS_DATA.forEach(acc => {
+    const county = COUNTY_MAP[acc.name];
+    if (county && totals[county]) {
+      totals[county].rev      += acc.revenue_2026 || 0;
+      totals[county].accounts += 1;
+      totals[county].accountList.push(acc);
+    }
+  });
+  return totals;
+}
+
+function countyColor(rev, maxRev, ni) {
+  if (rev === 0) return ni ? '#2a3a5c' : '#e8ecf0';
+  const t = Math.min(rev / maxRev, 1);
+  if (ni) {
+    // NI: navy scale
+    const r = Math.round(42  + t * (26  - 42));
+    const g = Math.round(58  + t * (26  - 58));
+    const b = Math.round(92  + t * (46  - 92));
+    return `rgb(${r},${g},${b})`;
+  } else {
+    // ROI: amber scale
+    if (t < 0.25) return `rgba(232,184,75,${0.15 + t * 1.2})`;
+    if (t < 0.5)  return `rgba(232,184,75,${0.5  + t * 0.8})`;
+    if (t < 0.75) return `rgba(26,26,46,${0.4    + t * 0.4})`;
+    return `rgba(26,26,46,${0.75 + t * 0.25})`;
+  }
+}
+
+function countyTextColor(rev, maxRev, ni) {
+  const t = Math.min(rev / (maxRev || 1), 1);
+  if (rev === 0) return ni ? 'rgba(255,255,255,0.3)' : '#9aa3b2';
+  if (t > 0.45) return '#ffffff';
+  return '#1a1a2e';
+}
+
+function renderGeography() {
+  const totals  = buildCountyTotals();
+  const maxRev  = Math.max(...Object.values(totals).map(t => t.rev));
+  const totalRev = Object.values(totals).reduce((s, t) => s + t.rev, 0);
+  const niRev   = COUNTY_GRID.filter(c => c.ni).reduce((s, c) => s + totals[c.name].rev, 0);
+  const roiRev  = totalRev - niRev;
+  const counties = COUNTY_GRID.length;
+  const activeCounties = Object.values(totals).filter(t => t.rev > 0).length;
+
+  // KPIs
+  const kpiRow = document.getElementById('geoKpiRow');
+  if (kpiRow) {
+    kpiRow.innerHTML = [
+      { label:'Total Mapped Revenue', value: gbp(totalRev), sub:'across '+activeCounties+' counties', cls:'' },
+      { label:'Northern Ireland',     value: gbp(niRev),    sub: pct(niRev/totalRev*100)+' of total', cls:'teal' },
+      { label:'Republic of Ireland',  value: gbp(roiRev),   sub: pct(roiRev/totalRev*100)+' of total', cls:'sky' },
+      { label:'Active Counties',      value: activeCounties+'/'+counties, sub:'counties with revenue', cls:'green' },
+    ].map(k => `
+      <div class="kpi-card ${k.cls}">
+        <div class="kpi-label">${k.label}</div>
+        <div class="kpi-value">${k.value}</div>
+        <div class="kpi-sub">${k.sub}</div>
+      </div>`).join('');
+  }
+
+  // Legend
+  const legend = document.getElementById('geoLegend');
+  if (legend) {
+    legend.innerHTML = `
+      <span>Low</span>
+      <div class="legend-swatch">
+        ${[0.05,0.2,0.4,0.65,0.9].map(t => `<div class="legend-block" style="background:${countyColor(t*maxRev,maxRev,false)}"></div>`).join('')}
+      </div>
+      <span>High (ROI)</span>
+      <span style="margin-left:10px">NI</span>
+      <div class="legend-swatch">
+        ${[0.05,0.2,0.4,0.65,0.9].map(t => `<div class="legend-block" style="background:${countyColor(t*maxRev,maxRev,true)}"></div>`).join('')}
+      </div>
+      <span>High (NI)</span>`;
+  }
+
+  // Tile Map
+  const grid = document.getElementById('countyGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  COUNTY_GRID.forEach(c => {
+    const data = totals[c.name];
+    const bg   = countyColor(data.rev, maxRev, c.ni);
+    const fg   = countyTextColor(data.rev, maxRev, c.ni);
+    const tile = document.createElement('div');
+    tile.className = 'county-tile' + (c.ni ? ' ni-tile' : '');
+    tile.style.cssText = `
+      background:${bg};
+      color:${fg};
+      grid-column:${c.col + 1};
+      grid-row:${c.row + 1};
+    `;
+    tile.innerHTML = `
+      <div class="ct-abbr">${c.abbr}</div>
+      <div class="ct-name">${c.name}</div>
+      ${data.rev > 0 ? `<div class="ct-rev">${gbpK(data.rev)}</div>` : ''}
+    `;
+    tile.title = `${c.name}${c.ni?' (NI)':''}: ${gbp(data.rev)} · ${data.accounts} account${data.accounts!==1?'s':''}`;
+    tile.addEventListener('click', () => showCountyDetail(c, data, totals));
+    grid.appendChild(tile);
+  });
+
+  // County rank table
+  renderCountyRankTable(totals, totalRev);
+}
+
+function showCountyDetail(county, data, totals) {
+  // Highlight tile
+  document.querySelectorAll('.county-tile').forEach(t => t.classList.remove('selected'));
+  const tiles = document.querySelectorAll('.county-tile');
+  tiles.forEach(t => { if (t.querySelector('.ct-abbr')?.textContent === county.abbr) t.classList.add('selected'); });
+
+  const card = document.getElementById('countyDetailCard');
+  const title = document.getElementById('countyDetailTitle');
+  const sub   = document.getElementById('countyDetailSub');
+  if (!card) return;
+
+  title.textContent = `${county.name}${county.ni ? ' (Northern Ireland)' : ' (Republic of Ireland)'}`;
+  sub.textContent   = `${data.accounts} account${data.accounts!==1?'s':''} · ${gbp(data.rev)} 2026 YTD`;
+  card.classList.remove('hidden');
+
+  const tbody = card.querySelector('tbody');
+  if (!tbody) return;
+
+  const sorted = [...data.accountList].sort((a, b) => b.revenue_2026 - a.revenue_2026);
+  tbody.innerHTML = sorted.length
+    ? sorted.map((acc, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td class="fw-700">${acc.name}</td>
+          <td><span class="badge ${segBadgeClass(acc.segment)}">${acc.segment?.split(' - ')[1] || acc.segment}</span></td>
+          <td class="num fw-700">${gbp(acc.revenue_2026)}</td>
+          <td class="num">${acc.orders}</td>
+          <td>${statusBadge(acc.status)}</td>
+        </tr>`).join('')
+    : '<tr><td colspan="6" class="empty-state">No accounts mapped to this county</td></tr>';
+
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function segBadgeClass(seg) {
+  if (!seg) return '';
+  if (seg.includes('A -')) return 'badge-A seg-a';
+  if (seg.includes('B -')) return 'badge-B seg-b';
+  if (seg.includes('C -')) return 'seg-c';
+  return 'seg-d';
+}
+
+function renderCountyRankTable(totals, totalRev) {
+  const tbody = document.querySelector('#countyRankTable tbody');
+  if (!tbody) return;
+
+  const sorted = COUNTY_GRID
+    .map(c => ({ county: c, data: totals[c.name] }))
+    .filter(x => x.data.rev > 0)
+    .sort((a, b) => b.data.rev - a.data.rev);
+
+  tbody.innerHTML = sorted.map(({ county, data }, i) => {
+    const pctOfTotal = totalRev > 0 ? (data.rev / totalRev * 100) : 0;
+    const barWidth   = Math.max(2, Math.round(pctOfTotal / sorted[0].data.rev * totalRev * 100 / totalRev));
+    return `
+      <tr>
+        <td>${i + 1}</td>
+        <td class="fw-700">${county.name}</td>
+        <td><span class="badge ${county.ni ? 'badge-B seg-b' : 'seg-d'}">${county.ni ? 'NI' : 'ROI'}</span></td>
+        <td class="num">${data.accounts}</td>
+        <td class="num fw-700">${gbp(data.rev)}</td>
+        <td class="num">${pct(pctOfTotal)}</td>
+        <td>
+          <div style="background:#f0f2f5;border-radius:3px;height:8px;min-width:60px">
+            <div style="height:100%;border-radius:3px;width:${Math.round(pctOfTotal/sorted[0]?.data.rev*sorted[0]?.data.rev/data.rev*pctOfTotal)}%;background:${county.ni?'#2a9d8f':'#e8b84b'};width:${Math.max(2,Math.round(data.rev/sorted[0].data.rev*100))}%"></div>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+}

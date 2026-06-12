@@ -39,6 +39,7 @@
     <button class="tab-btn" data-tab="plans">🎯 Account Plans</button>
     <button class="tab-btn" data-tab="trends">📈 Monthly Trends</button>
     <button class="tab-btn" data-tab="atrisk">⚠ At Risk</button>
+    <button class="tab-btn" data-tab="geography">🗺️ Geography</button>
   </nav>
 
   <main class="main">
@@ -223,6 +224,82 @@
                 <th class="num">Days Inactive</th>
                 <th>Segment</th>
                 <th>Recommended Action</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ═══════════════════ GEOGRAPHY ════════════════════════ -->
+    <section id="tab-geography" class="tab-section">
+
+      <div class="section-header">
+        <h2>Sales Geography — Ireland &amp; Northern Ireland</h2>
+        <p>2026 YTD revenue by county · Based on account locations · Click a county for detail</p>
+      </div>
+
+      <div class="kpi-row" id="geoKpiRow"></div>
+
+      <div class="grid-2">
+        <!-- Tile Map -->
+        <div class="card card-wide">
+          <div class="card-header">
+            <h3>Revenue Heat Map</h3>
+            <div class="geo-legend" id="geoLegend"></div>
+          </div>
+          <div class="geo-map-wrap">
+            <div class="county-grid" id="countyGrid"></div>
+          </div>
+          <div class="note-box" style="margin-top:16px;">
+            <strong>Note:</strong> County assignments are inferred from account names and known HQ locations.
+            Some accounts may be mapped to incorrect counties — contact your admin to refine.
+          </div>
+        </div>
+      </div>
+
+      <!-- County Detail Panel -->
+      <div class="card hidden" id="countyDetailCard">
+        <div class="card-header">
+          <h3 id="countyDetailTitle">County Detail</h3>
+          <span class="card-sub" id="countyDetailSub"></span>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table" id="countyDetailTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Account</th>
+                <th>Segment</th>
+                <th class="num">2026 Revenue</th>
+                <th class="num">Orders</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- County Ranked Table -->
+      <div class="card">
+        <div class="card-header">
+          <h3>All Counties — Ranked by Revenue</h3>
+          <span class="card-sub">ROI and NI combined</span>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table" id="countyRankTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>County</th>
+                <th>Region</th>
+                <th class="num">Accounts</th>
+                <th class="num">2026 Revenue</th>
+                <th class="num">% of Total</th>
+                <th>Revenue Bar</th>
               </tr>
             </thead>
             <tbody></tbody>
