@@ -243,20 +243,17 @@
 
       <div class="kpi-row" id="geoKpiRow"></div>
 
-      <div class="grid-2">
-        <!-- Tile Map -->
-        <div class="card card-wide">
-          <div class="card-header">
-            <h3>Revenue Heat Map</h3>
-            <div class="geo-legend" id="geoLegend"></div>
-          </div>
-          <div class="geo-map-wrap">
-            <div class="county-grid" id="countyGrid"></div>
-          </div>
-          <div class="note-box" style="margin-top:16px;">
-            <strong>Note:</strong> County assignments are inferred from account names and known HQ locations.
-            Some accounts may be mapped to incorrect counties — contact your admin to refine.
-          </div>
+      <div class="geo-map-card card">
+        <div class="card-header">
+          <h3>Revenue Heat Map</h3>
+          <div class="geo-legend" id="geoLegend"></div>
+        </div>
+        <div class="geo-svg-wrap">
+          <svg id="irelandMap" viewBox="0 0 600 700" xmlns="http://www.w3.org/2000/svg"></svg>
+          <div class="geo-tooltip hidden" id="geoTooltip"></div>
+        </div>
+        <div class="note-box" style="margin-top:16px;">
+          <strong>Note:</strong> County boundaries from Natural Earth data. County assignments sourced from billing addresses in Prospect CRM.
         </div>
       </div>
 
@@ -327,6 +324,7 @@
       }
     })();
   </script>
+  <script src="ireland-map.js"></script>
   <script src="analytics-data.js"></script>
   <script src="analytics-app.js"></script>
 
