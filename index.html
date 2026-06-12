@@ -54,8 +54,8 @@
     </div>
   </div>
 
-  <!-- NAV -->
-  <nav class="navbar">
+  <!-- NAV — hidden until auth confirmed -->
+  <nav class="navbar hidden" id="mainNav">
     <div class="nav-logo">EMTEK<span class="logo-arrow">«</span></div>
     <div class="nav-links">
       <button class="nav-btn active" data-view="dashboard">Dashboard</button>
@@ -78,8 +78,8 @@
     </div>
   </nav>
 
-  <!-- HERO SPLIT BANNER -->
-  <div class="hero-split">
+  <!-- HERO SPLIT BANNER — hidden until auth confirmed -->
+  <div class="hero-split hidden" id="heroSplit">
     <div class="hero-panel blue" id="heroPanelLeft">
       <div class="hero-label" id="heroLeftLabel">DASHBOARD</div>
       <div class="hero-sub" id="heroLeftSub">All active orders</div>
@@ -509,8 +509,8 @@
   <!-- TOAST -->
   <div id="toast" class="toast hidden"></div>
 
-  <!-- Loading overlay -->
-  <div id="loadingOverlay" class="loading-overlay hidden">
+  <!-- Loading overlay — visible by default; hidden only after auth is confirmed -->
+  <div id="loadingOverlay" class="loading-overlay">
     <div class="loading-box">
       <div class="loading-spinner"></div>
       <div class="loading-text">Connecting...</div>

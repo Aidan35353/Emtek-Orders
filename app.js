@@ -22,11 +22,14 @@ const db = createClient(SUPABASE_URL, SUPABASE_ANON); // single client: auth + r
 const API = SUPABASE_URL + '/rest/v1';
 
 async function api(method, path, body) {
+  // Always use the authenticated user's JWT — never the anon key as Bearer
+  const { data: { session: _s } } = await db.auth.getSession();
+  const token = _s ? _s.access_token : SUPABASE_ANON;
   const opts = {
     method,
     headers: {
       'apikey':        SUPABASE_ANON,
-      'Authorization': 'Bearer ' + SUPABASE_ANON,
+      'Authorization': 'Bearer ' + token,
       'Content-Type':  'application/json',
       'Prefer':        'return=representation',
     },
@@ -187,13 +190,24 @@ const loginScreen = document.getElementById('loginScreen');
 const loginForm   = document.getElementById('loginForm');
 const loginError  = document.getElementById('loginError');
 
+const mainNav   = document.getElementById('mainNav');
+const heroSplit = document.getElementById('heroSplit');
+
 function showLoginScreen() {
   loginScreen.classList.remove('hidden');
   loginError.classList.add('hidden');
   loginForm.reset();
   Object.values(views).forEach(v => v.classList.add('hidden'));
+  // Hide app chrome so unauthenticated users see only the login form
+  mainNav.classList.add('hidden');
+  heroSplit.classList.add('hidden');
 }
-function hideLoginScreen() { loginScreen.classList.add('hidden'); }
+function hideLoginScreen() {
+  loginScreen.classList.add('hidden');
+  // Reveal app chrome now that the user is authenticated
+  mainNav.classList.remove('hidden');
+  heroSplit.classList.remove('hidden');
+}
 
 loginForm.addEventListener('submit', async e => {
   e.preventDefault();
